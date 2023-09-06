@@ -1,6 +1,6 @@
 # libx
 
-It's a personal c language library for exploiting.
+It's a personal c language library for kernel exploiting. 
 
 # Usage
 
