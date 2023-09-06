@@ -4,7 +4,32 @@ It's a c language library for exploiting.
 
 # Usage
 
+
+Install libx
 ```bash
-wget <url/to/libx>
-gcc ./exp.c -L. -lx -o exp -w
+git clone git@github.com:n132/libx.git
+cd libx
+make
+make install
+```
+
+
+uninstall libx
+```bash
+make clean
+make remove
+```
+
+# Example
+
+```c
+//gcc main.c -o ./main -lx -w
+#include "libx.h"
+#include <stdio.h>
+int main(){
+    char *ptr =0xdeadbeef000;
+    froze();
+    puts(ptr);
+    puts("Done");
+}
 ```
