@@ -17,7 +17,7 @@ make install
 uninstall libx
 ```bash
 make clean
-make remove
+make uninstall
 ```
 
 # Example
