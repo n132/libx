@@ -1,7 +1,9 @@
 all: libx.c libx.h
-	gcc -c -masm=intel ./libx.c -o ./libx.o -w -fPIC
-	gcc -shared -o libx.so libx.o -w -fPIC
+	gcc -c -masm=intel ./libx.c -o ./libx.o -fPIC -w 
+	gcc -shared -o libx.so libx.o -fPIC -w 
 	ar rcs libx.a libx.o
+test: main.c
+	gcc -c ./main.c -o ./main -L . -lx
 clean:
 	rm -rf ./libx.o ./libx.so ./libx.a
 install: libx.so
