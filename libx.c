@@ -256,8 +256,35 @@ void msgQueueDel(int msgid){
     return; 
 }
 
+/*
+    Function Id 3: Dup one byte
+    Desc:
+        Duplicate a byte n times and return the allocated chunk
+    Example:
+        dp('\xff',0x88);
+*/
+__u8 * dp(__u8 * c,size_t n){
+    __u8* res = malloc(n+1);
+    memset(res,c,n);
+    res[n] = NULL;
+    return res;
+}
 
-
+/*
+    Function Id 4: Flat
+    Desc:
+        pack n size_t values by p64
+    Example:
+        sizez_t values = {1,2,3,4,5};
+        flat(values);
+*/
+__u8 * flat(size_t *values,size_t n){
+    size_t * res = calloc(1,sizeof(size_t)*n+1);
+    for(int i = 0 ; i < n; i++){
+        res[i] = values[i];
+    }
+    return (__u8 *)res;
+}
 //  Part III: ret2usr
 
 

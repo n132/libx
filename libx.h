@@ -38,7 +38,8 @@ void save_status();
 void setsuid(char *);
 void DEBUG();
 __u8 *p64(size_t);
-
+__u8 * dp(__u8 * c,size_t n);
+__u8 * flat(size_t *values,size_t n);
 // Part II: MSGMSG related
 typedef struct msgQueueMsg{
     long mtype;
