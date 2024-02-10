@@ -52,12 +52,9 @@ void msgQueueDel(int msgid);
 
 // Part III: ret2usr
 extern size_t commit_creds;
-extern size_t prepare_kernel_cred=0;
+extern size_t prepare_kernel_cred;
 extern void (*back2user)();
 void getRootPrivilige();
-
-
-
 
 
 #endif
