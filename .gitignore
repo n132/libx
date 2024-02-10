@@ -2,3 +2,5 @@
 *.so
 *.a
 main
+*.swap
+.vscode
