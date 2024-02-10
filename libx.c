@@ -271,15 +271,15 @@ __u8 * dp(__u8 * c,size_t n){
 }
 
 /*
-    Function Id 4: Flat
+    Function Id 4: flatn
     Desc:
         pack n size_t values by p64
     Example:
         sizez_t values = {1,2,3,4,5};
         flat(values);
 */
-__u8 * flat(size_t *values,size_t n){
-    size_t * res = calloc(1,sizeof(size_t)*n+1);
+__u8 * flatn(size_t *values,size_t n){
+    size_t * res = malloc(sizeof(size_t)*n+1);
     for(int i = 0 ; i < n; i++){
         res[i] = values[i];
     }
