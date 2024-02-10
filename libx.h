@@ -25,10 +25,10 @@
 #include <linux/socket.h>
 // size_t user_cs, user_ss, user_rflags, user_sp;
 
-void panic(char *s);
+void panic(char *);
 void shell();
-void info(size_t val);
-void* userfaultfd_leak_handler(void* arg);
+void info(size_t);
+void* userfaultfd_leak_handler(void*);
 size_t * forze();
 
 
@@ -37,7 +37,7 @@ void hook_segfault();
 void save_status();
 void setsuid(char *);
 void DEBUG();
-
+__u8 *p64(size_t);
 
 // Part II: MSGMSG related
 typedef struct msgQueueMsg{
@@ -45,5 +45,20 @@ typedef struct msgQueueMsg{
     char mtext[1];
 } msgQueueMsg;
 int msgQueueCreate(char *s);
+void msgQueueSend(int msgid,char *text,size_t size,size_t type);
+msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type);
+void msgQueueDel(int msgid);
+
+
+// Part III: ret2usr
+extern size_t commit_creds;
+extern size_t prepare_kernel_cred=0;
+extern void (*back2user)();
+void getRootPrivilige();
+
+
+
+
 
 #endif
+

