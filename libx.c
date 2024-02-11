@@ -285,6 +285,48 @@ __u8 * flatn(size_t *values,size_t n){
     }
     return (__u8 *)res;
 }
+
+/*
+    Function Id 5: findp64
+    Desc:
+        find a specific pointer in a chunk of memory
+        and return the offset
+    Example:
+        sizez_t off = findp64(stack,0x100,0xdeadbeef)
+*/
+
+size_t findp64(__u8 *stack,size_t value, size_t n){
+    size_t * ptr;
+    if(n<8)
+        panic("[-] There is not enough space for searching");
+    for(size_t i =0 ; i <= n-8; i++){
+        ptr = stack+i;
+        if(value == *ptr)
+            return i;
+    }
+    return NULL;
+}
+/*
+    Function Id 6: str
+    Desc:
+        transform a int to string
+    Example:
+        char *ptr = str(123);
+*/
+char *str(int a){
+    char *res = malloc(0x100);
+    sprintf(res, "%d", a);
+    return res;
+}
+
+
+
+
+
+
+
+
+
 //  Part III: ret2usr
 
 
