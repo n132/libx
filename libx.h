@@ -47,11 +47,11 @@ char *str(int a);
 typedef struct msgQueueMsg{
     long mtype;
     char mtext[1];
-} msgQueueMsg;
+} msgMsg;
 // int msgQueueCreate(char *s);
 int msgGet();
 void msgSend(int msgid,char *text,size_t size);
-msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type);
+msgMsg* msgRecv(int msgid,size_t size);
 void msgDel(int msgid);
 
 

@@ -259,7 +259,7 @@ int msgGet(){
         msgSend(msgid,"libx",5,1);
 */
 void msgSend(int msgid,char *text,size_t size){
-    msgQueueMsg* msg = (msgQueueMsg *)malloc(sizeof(long)+size+0x1);
+    msgMsg* msg = (msgMsg *)malloc(sizeof(long)+size+0x1);
     msg->mtype = 04000; // IPC_NOWAIT / Message type (can be any positive integer)
     strncpy(msg->mtext, text, size);
     // Send the message
@@ -271,24 +271,21 @@ void msgSend(int msgid,char *text,size_t size){
     return ;  
 }
 /*
-    Name: msgQueueRecv/msgRecv
+    Name: msgRecv
     Desc:
         Remove (a) message(s) from msgqueue
     Example:
-        msgQueueRecv(msgid,0x1000,0);
+        msgRecv(msgid,0x1000,0);
 */
-msgQueueMsg* msgRecv(int msgid,size_t size,size_t type){
-    return msgQueueRecv(msgid,size,type);
-}
-msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type){
-    msgQueueMsg* recv = (msgQueueMsg *)malloc(sizeof(long)+size+1);
-    if (syscall(SYS_msgrcv, msgid, recv, size, type, 0|010000) == -1) {
+msgMsg* msgRecv(int msgid,size_t size){
+    msgMsg* recv = (msgMsg *)malloc(sizeof(long)+size+1);
+    if (msgrcv(msgid, recv, size, 0, MSG_NOERROR | IPC_NOWAIT)<0) {
         perror("msgrcv");
         return NULL;
     }
     return recv;
-
 }
+
 /*
     Name: msgDel
     Desc:
