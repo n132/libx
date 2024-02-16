@@ -295,20 +295,18 @@ msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type){
 
 }
 /*
-    Name: msgQueueDel/msgDel
+    Name: msgDel
     Desc:
         Delete a mesage queue
     Example:
-        msgQueueDel(msgid);
+        msgDel(msgid);
 */
 void msgDel(int msgid){
-    msgQueueDel(msgid);
-}
-void msgQueueDel(int msgid){
     if (msgctl(msgid, IPC_RMID, NULL) == -1)
         perror("msgctl");
     return; 
 }
+
 
 /*
     Name: msgSpray
@@ -329,7 +327,6 @@ void msgSpray(size_t msg_len,size_t num){
         _msgQueueSpray();
     }
     
-
 }
 
 

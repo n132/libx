@@ -52,7 +52,7 @@ typedef struct msgQueueMsg{
 int msgGet();
 void msgQueueSend(int msgid,char *text,size_t size,size_t type);
 msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type);
-void msgQueueDel(int msgid);
+void msgDel(int msgid);
 
 
 // Part III: ret2usr
