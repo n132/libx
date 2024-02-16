@@ -1,9 +1,43 @@
 #include "libx.h"
+
+#define MSGMNB_FILE "/proc/sys/kernel/msgmnb"
+
 /*
-Utils
+Utils 
 */
-void panic(char *s){
-    puts(s);
+
+size_t fread_u64(const char *fname)
+{
+    size_t size = 0x100;
+	FILE *f = fopen(fname, "r");
+	char *buf = calloc(1,size+1);
+	fread(buf, 1, size, f);
+	buf[size] = 0;
+	fclose(f);
+	return atoll(buf);
+}
+size_t MSGLIMIT =0 ;
+size_t msgLimit(){
+    if(!MSGLIMIT){
+        return fread_u64(MSGMNB_FILE);
+    }else{
+        return MSGLIMIT;
+    }
+}
+void warn(const char* text) {
+    // Yellow color code
+    printf("\033[0;33m");
+    printf("%s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+}
+
+void panic(const char *text){
+    // Red color code
+    printf("\033[0;31m");
+    printf("%s", text);
+    // Reset to default color
+    printf("\033[0m\n");
     exit(0x132);
 }
 void shell(){
@@ -13,7 +47,11 @@ void shell(){
         panic("[!] Failed to Escape");
 }
 void info(size_t val){
-    printf("[+] %p\n",val);
+    // Blue color code
+    printf("\033[0;34m[+] ");
+    printf("%p", val);
+    // Reset to default color
+    printf("\033[0m\n");
 }
 
 /*
@@ -109,7 +147,7 @@ save_status for ret2user
 */
 
 /*
-    Function Id 0: Set a Handler of Segfault
+    Name: Set a Handler of Segfault
     Desc:
         If kernel Heap is borken we can use to process a SEGFAULT and spawn a shell
 */
@@ -134,7 +172,7 @@ void hook_segfault(){
 
 
 /*
-    Function Id 1: Set SUID for a prorgam
+    Name: Set SUID for a prorgam
     Desc:
         Provide the name of file. Try to setsuid for it. 
     Example:
@@ -152,7 +190,7 @@ void setsuid(char *filename){
     return 0;
 }
 /*
-    Function Id 2: Stop the process for debugging
+    Name: Stop the process for debugging
     Desc:
         Stop the process for debugging
     Example:
@@ -164,7 +202,7 @@ void debug(){
     read(0,buf,0xf);
 }
 /*
-    Function Id 3:p64
+    Name:p64
     Desc:
         Return a heap pointer of little endian packed 64bit value
     Example:
@@ -183,37 +221,47 @@ __u8 *p64(size_t val){
 */
 
 /*
-    Function Id 0: create a msgQueue
+    Name: msgGet/msgQueue
     Desc:
         Provide a path, return the msgid
     Example:
         msgQueueCreate("/Home/user/1");
 */
-int msgQueueCreate(char *s){
-    key_t key;
-    mkdir(s, 0755);
-    // Generate a unique key for the message queue
-    key = ftok(s, 'A');
-    if (key == -1) {
-        perror("ftok");
-        return 1;
-    }
-    int msgid;
-    // Create a message queue
-    msgid = msgget(key, 0666 | IPC_CREAT);
-    if (msgid == -1) {
-        perror("msgget");
-        return 1;
-    }
-    return msgid;
+int msgGet(){
+    int res= msgget(0,01644);
+    if(res<0)
+        panic("[-] Failed to create a msg queue");
+    return res;
 }
+// int msgQueueCreate(char *s){ // Obsoleted
+//     key_t key;
+//     mkdir(s, 0755);
+//     // Generate a unique key for the message queue
+//     key = ftok(s, 'A');
+//     if (key == -1) {
+//         perror("ftok");
+//         return 1;
+//     }
+//     int msgid;
+//     // Create a message queue
+//     msgid = msgget(key, 0666 | IPC_CREAT);
+//     if (msgid == -1) {
+//         perror("msgget");
+//         return 1;
+//     }
+//     return msgid;
+// }
 /*
-    Function Id 1: Send a Msg
+    Name: msgQueueSend/msgSend
     Desc:
         Insert a new message to a msgqueue
     Example:
         msgQueueSend(msgid,"libx",5,1);
 */
+void msgSend(int msgid,char *text,size_t size,size_t type){
+    msgQueueSend(msgid,text,size,type);
+    return ;
+}
 void msgQueueSend(int msgid,char *text,size_t size,size_t type){
     
     msgQueueMsg* msg = (msgQueueMsg *)malloc(sizeof(long)+size+0x1);
@@ -228,12 +276,15 @@ void msgQueueSend(int msgid,char *text,size_t size,size_t type){
     return ;  
 }
 /*
-    Function Id 2: Recv a Msg
+    Name: msgQueueRecv/msgRecv
     Desc:
         Remove (a) message(s) from msgqueue
     Example:
         msgQueueRecv(msgid,0x1000,0);
 */
+msgQueueMsg* msgRecv(int msgid,size_t size,size_t type){
+    return msgQueueRecv(msgid,size,type);
+}
 msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type){
     msgQueueMsg* recv = (msgQueueMsg *)malloc(sizeof(long)+size+1);
     if (syscall(SYS_msgrcv, msgid, recv, size, type, 0|010000) == -1) {
@@ -244,12 +295,15 @@ msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type){
 
 }
 /*
-    Function Id 2: Delete a mesage queue
+    Name: msgQueueDel/msgDel
     Desc:
         Delete a mesage queue
     Example:
         msgQueueDel(msgid);
 */
+void msgDel(int msgid){
+    msgQueueDel(msgid);
+}
 void msgQueueDel(int msgid){
     if (msgctl(msgid, IPC_RMID, NULL) == -1)
         perror("msgctl");
@@ -257,7 +311,30 @@ void msgQueueDel(int msgid){
 }
 
 /*
-    Function Id 3: Dup one byte
+    Name: msgSpray
+    Desc:
+        Duplicate a byte n times and return the allocated chunk
+    Example:
+        dp('\xff',0x88);
+*/
+void _msgQueueSpray(){
+    ;
+}
+void msgSpray(size_t msg_len,size_t num){
+    size_t msg_object_size = msg_len+0x30;
+    if( msg_object_size > msgLimit ) panic("[-] The size of msg object is larger than the limit of msg queue");
+    if( msg_object_size > PAGE_SIZE) warn("[!] Msg object size > PAGE_SIZE, this could not be what you want");
+    size_t max_msg_num_pre_queue = msgLimit() / msg_object_size;
+    while(num>0){
+        _msgQueueSpray();
+    }
+    
+
+}
+
+
+/*
+    Name: Dup one byte
     Desc:
         Duplicate a byte n times and return the allocated chunk
     Example:
@@ -270,8 +347,9 @@ __u8 * dp(__u8 * c,size_t n){
     return res;
 }
 
+
 /*
-    Function Id 4: flatn
+    Name: flatn
     Desc:
         pack n size_t values by p64
     Example:
@@ -287,7 +365,7 @@ __u8 * flatn(size_t *values,size_t n){
 }
 
 /*
-    Function Id 5: findp64
+    Name: findp64
     Desc:
         find a specific pointer in a chunk of memory
         and return the offset
@@ -307,7 +385,7 @@ size_t findp64(__u8 *stack,size_t value, size_t n){
     return NULL;
 }
 /*
-    Function Id 6: str
+    Name: str
     Desc:
         transform a int to string
     Example:
@@ -318,10 +396,30 @@ char *str(int a){
     sprintf(res, "%d", a);
     return res;
 }
+/*
+    Name: strdupn
+    Desc:
+        load a string to heap
+    Example:
+        char *ptr = strdupn("n132",0x28);
+*/
+char *strdupn(char *s, size_t size){
+    char * res = calloc(1,size);
+    strcpy(res,s);
+    return res;
+}
+/*
+    Name: mmapx(addr,size)
+    Desc:
+        a wrapper of mmap
+    Example:
+        d
+*/
 
-
-
-
+void *mmapx(void *addr, size_t size)
+{
+	return mmap(addr, size, 7 , 0x21, -1, 0);
+}
 
 
 
@@ -331,7 +429,7 @@ char *str(int a){
 
 
 /*
-    Function Id 2: getRootPrivilige
+    Name: getRootPrivilige
     Desc:
         getRootPrivilige for ret2usr.
         Before hitting this chal, 

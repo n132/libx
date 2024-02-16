@@ -40,8 +40,15 @@
     }
 #endif // 
 int main(){
-    save_status();
-    hook_segfault();
-    char *p = 0;
-    char pp = *p;
+    // save_status();
+    // hook_segfault();
+    // char *p = 0;
+    // char pp = *p;
+    //msgqid = msgget(IPC_PRIVATE, 0644 | IPC_CREAT);
+    
+    int res;
+    for(int i = 0 ; i < 0x10; i++){
+        res = msgget(0,01644);
+        info(res);
+    }
 }

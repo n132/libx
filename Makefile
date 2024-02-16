@@ -3,7 +3,7 @@ all: libx.c libx.h
 	gcc -shared -o libx.so libx.o -fPIC -w 
 	ar rcs libx.a libx.o
 test: main.c
-	gcc -c ./main.c -o ./main -L . -lx
+	gcc -masm=intel ./main.c -o ./main --static -L . -lx -w -fPIE
 clean:
 	rm -rf ./libx.o ./libx.so ./libx.a
 install: libx.so

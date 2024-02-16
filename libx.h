@@ -25,7 +25,7 @@
 #include <linux/socket.h>
 // size_t user_cs, user_ss, user_rflags, user_sp;
 
-void panic(char *);
+void panic(const char *text);
 void shell();
 void info(size_t);
 void* userfaultfd_leak_handler(void*);
@@ -48,7 +48,8 @@ typedef struct msgQueueMsg{
     long mtype;
     char mtext[1];
 } msgQueueMsg;
-int msgQueueCreate(char *s);
+// int msgQueueCreate(char *s);
+int msgGet();
 void msgQueueSend(int msgid,char *text,size_t size,size_t type);
 msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type);
 void msgQueueDel(int msgid);
