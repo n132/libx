@@ -252,23 +252,18 @@ int msgGet(){
 //     return msgid;
 // }
 /*
-    Name: msgQueueSend/msgSend
+    Name: msgSend
     Desc:
         Insert a new message to a msgqueue
     Example:
-        msgQueueSend(msgid,"libx",5,1);
+        msgSend(msgid,"libx",5,1);
 */
-void msgSend(int msgid,char *text,size_t size,size_t type){
-    msgQueueSend(msgid,text,size,type);
-    return ;
-}
-void msgQueueSend(int msgid,char *text,size_t size,size_t type){
-    
+void msgSend(int msgid,char *text,size_t size){
     msgQueueMsg* msg = (msgQueueMsg *)malloc(sizeof(long)+size+0x1);
-    msg->mtype = type; // Message type (can be any positive integer)
+    msg->mtype = 04000; // IPC_NOWAIT / Message type (can be any positive integer)
     strncpy(msg->mtext, text, size);
     // Send the message
-    if (syscall(SYS_msgsnd, msgid, msg, size, 0) == -1) {
+    if (syscall(SYS_msgsnd, msgid, msg, size, 0)<0) {
         perror("msgsnd");
         return ;
     }

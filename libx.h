@@ -50,7 +50,7 @@ typedef struct msgQueueMsg{
 } msgQueueMsg;
 // int msgQueueCreate(char *s);
 int msgGet();
-void msgQueueSend(int msgid,char *text,size_t size,size_t type);
+void msgSend(int msgid,char *text,size_t size);
 msgQueueMsg* msgQueueRecv(int msgid,size_t size,size_t type);
 void msgDel(int msgid);
 
