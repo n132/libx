@@ -46,6 +46,11 @@ void shell(){
     else
         panic("[!] Failed to Escape");
 }
+void xInfo(const char *text){
+    printf("\033[0;32m");
+    printf("%s", text);
+    printf("\033[0m\n");
+}
 void info(size_t val){
     // Blue color code
     printf("\033[0;34m[+] ");
@@ -282,21 +287,7 @@ void msgDel(int msgid){
 }
 
 
-/*
-    Name: msgSpray_t
-    Desc:
-        describe one msgqueue while spraying
-    Example:
-        ;
-*/
-typedef struct msgSpray_t {
-    msgSpray_t *next;
-	__u8 *ctx;
-	size_t size;
-	size_t num;
-    int msg_id;
 
-} msgSpray_t;
 
 /*
     Name: msgSpray
@@ -322,7 +313,7 @@ msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
     record->size = size;
     return record;
 }
-msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 ctx){
+msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
     size_t msg_object_size = msg_len+0x30;
     if( msg_object_size > msgLimit ) panic("[-] The size of msg object is larger than the limit of msg queue");
     if( msg_object_size > PAGE_SIZE) warn("[!] Msg object size > PAGE_SIZE, this could not be what you want");
@@ -331,16 +322,20 @@ msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 ctx){
     msgSpray_t * next = NULL;
     size_t this_round = NULL;
     while(num > 0){
+        
         this_round = num > max_msg_num_pre_queue ? max_msg_num_pre_queue: num;
         next  = _msgSpray(msg_len, this_round, ctx);
+        
         if(ret) next->next  = ret;
         ret = next;
         num -= this_round;
     }
+    xInfo("[+] msgSpray Finished");
+
     return ret;
 }
 
-void msg_spray_clean(msgSpray_t *spray)
+void msgSprayClean(msgSpray_t *spray)
 {
 	while(spray) {
 		for(int i=0; i<spray->num; i++) 
@@ -348,6 +343,7 @@ void msg_spray_clean(msgSpray_t *spray)
 		msgDel(spray->msg_id);
 		spray = spray->next;
 	}
+    xInfo("[+] msgSpray Cleaning Finished");
 }
 /*
     Name: Dup one byte

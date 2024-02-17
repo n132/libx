@@ -23,6 +23,25 @@
 #include <stddef.h>
 #include <signal.h>
 #include <linux/socket.h>
+
+
+/*
+    Name: msgSpray_t
+    Desc:
+        describe one msgqueue while spraying
+    Example:
+        ;
+*/
+typedef struct msgSpray_t {
+    struct msgSpray_t *next;
+	__u8 *ctx;
+	size_t size;
+	size_t num;
+    int msg_id;
+
+} msgSpray_t;
+
+
 // size_t user_cs, user_ss, user_rflags, user_sp;
 
 void panic(const char *text);
@@ -53,7 +72,6 @@ int msgGet();
 void msgSend(int msgid,char *text,size_t size);
 msgMsg* msgRecv(int msgid,size_t size);
 void msgDel(int msgid);
-
 
 // Part III: ret2usr
 extern size_t commit_creds;
