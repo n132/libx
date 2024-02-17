@@ -233,24 +233,6 @@ int msgGet(){
         panic("[-] Failed to create a msg queue");
     return res;
 }
-// int msgQueueCreate(char *s){ // Obsoleted
-//     key_t key;
-//     mkdir(s, 0755);
-//     // Generate a unique key for the message queue
-//     key = ftok(s, 'A');
-//     if (key == -1) {
-//         perror("ftok");
-//         return 1;
-//     }
-//     int msgid;
-//     // Create a message queue
-//     msgid = msgget(key, 0666 | IPC_CREAT);
-//     if (msgid == -1) {
-//         perror("msgget");
-//         return 1;
-//     }
-//     return msgid;
-// }
 /*
     Name: msgSend
     Desc:
@@ -301,27 +283,72 @@ void msgDel(int msgid){
 
 
 /*
+    Name: msgSpray_t
+    Desc:
+        describe one msgqueue while spraying
+    Example:
+        ;
+*/
+typedef struct msgSpray_t {
+    msgSpray_t *next;
+	__u8 *ctx;
+	size_t size;
+	size_t num;
+    int msg_id;
+
+} msgSpray_t;
+
+/*
     Name: msgSpray
     Desc:
-        Duplicate a byte n times and return the allocated chunk
+        ;
     Example:
-        dp('\xff',0x88);
+        ;
 */
-void _msgQueueSpray(){
-    ;
+msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
+    // Create one and reach the per queue limit
+    size_t msg_id = msgGet();
+    if(!ctx){
+        ctx = calloc(1,size+1);
+        memset(ctx,0x69,size);
+    }
+    for(int i = 0 ; i < num ; i++){
+        msgSend(msg_id,ctx,size);
+    }
+    msgSpray_t * record = calloc(1,sizeof(msgSpray_t));
+    record->ctx = ctx;
+    record->msg_id = msg_id;
+    record->num = num;
+    record->size = size;
+    return record;
 }
-void msgSpray(size_t msg_len,size_t num){
+msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 ctx){
     size_t msg_object_size = msg_len+0x30;
     if( msg_object_size > msgLimit ) panic("[-] The size of msg object is larger than the limit of msg queue");
     if( msg_object_size > PAGE_SIZE) warn("[!] Msg object size > PAGE_SIZE, this could not be what you want");
     size_t max_msg_num_pre_queue = msgLimit() / msg_object_size;
-    while(num>0){
-        _msgQueueSpray();
+    msgSpray_t * ret  = NULL;
+    msgSpray_t * next = NULL;
+    size_t this_round = NULL;
+    while(num > 0){
+        this_round = num > max_msg_num_pre_queue ? max_msg_num_pre_queue: num;
+        next  = _msgSpray(msg_len, this_round, ctx);
+        if(ret) next->next  = ret;
+        ret = next;
+        num -= this_round;
     }
-    
+    return ret;
 }
 
-
+void msg_spray_clean(msgSpray_t *spray)
+{
+	while(spray) {
+		for(int i=0; i<spray->num; i++) 
+			msgRecv(spray->msg_id,spray->size);
+		msgDel(spray->msg_id);
+		spray = spray->next;
+	}
+}
 /*
     Name: Dup one byte
     Desc:
