@@ -371,6 +371,7 @@ __u8 * dpn(__u8 * c,size_t n,size_t nn){
         panic("Wrong usage of dpn");
     
     __u8* res = malloc(nn+1);
+    memset(res,0,nn);
     memset(res,c,n);
     res[n] = NULL;
     return res;
