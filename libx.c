@@ -359,6 +359,22 @@ __u8 * dp(__u8 * c,size_t n){
     return res;
 }
 
+/*
+    Name: Dup one byte
+    Desc:
+        Duplicate a byte n times and return the allocated chunk
+    Example:
+        dp('\xff',0x88);
+*/
+__u8 * dpn(__u8 * c,size_t n,size_t nn){
+    if(nn<n)
+        panic("Wrong usage of dpn");
+    
+    __u8* res = malloc(nn+1);
+    memset(res,c,n);
+    res[n] = NULL;
+    return res;
+}
 
 /*
     Name: flatn
@@ -382,7 +398,7 @@ __u8 * flatn(size_t *values,size_t n){
         find a specific pointer in a chunk of memory
         and return the offset
     Example:
-        sizez_t off = findp64(stack,0x100,0xdeadbeef)
+        sizez_t off = findp64(stack,0xdeadbeef,0x100)
 */
 
 size_t findp64(__u8 *stack,size_t value, size_t n){
