@@ -52,8 +52,8 @@ void xInfo(const char *text){
     printf("\033[0m\n");
 }
 void info(size_t val){
-    // Blue color code
-    printf("\033[0;34m[+] ");
+    // Green color code
+    printf("\033[0;32m[+] ");
     printf("%p", val);
     // Reset to default color
     printf("\033[0m\n");
