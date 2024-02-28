@@ -50,7 +50,6 @@ void info(size_t);
 void* userfaultfd_leak_handler(void*);
 size_t * forze();
 
-
 // Part I: Basics, not specific-technique-related
 void hook_segfault();
 void save_status();
@@ -61,6 +60,7 @@ __u8 * dp(__u8 * c,size_t n);
 __u8 * flatn(size_t *values,size_t n);
 size_t findp64(__u8 *stack,size_t value, size_t n);
 char *str(int a);
+size_t swab(size_t);
 
 // Part II: MSGMSG related
 typedef struct msgQueueMsg{

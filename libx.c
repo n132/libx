@@ -58,7 +58,19 @@ void info(size_t val){
     // Reset to default color
     printf("\033[0m\n");
 }
-
+size_t swab(size_t val){
+    size_t res = 0;
+    size_t  arr[0x8] = {0};
+    for(int i = 0 ; i <0x8;i++){
+        arr[i] = val&0xff;
+        val = val>>8;
+    }
+    for(int i = 0 ; i < 0x8 ; i++){
+        res*=0x100;
+        res+=arr[i];
+    }
+    return res;
+}
 /*
 Userfaultfd for race condition,
 Usage:
