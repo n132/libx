@@ -61,7 +61,7 @@ __u8 * flatn(size_t *values,size_t n);
 size_t findp64(__u8 *stack,size_t value, size_t n);
 char *str(int a);
 size_t swab(size_t);
-
+void modprobeAtk(char * path, char * cmd);
 // Part II: MSGMSG related
 typedef struct msgQueueMsg{
     long mtype;
