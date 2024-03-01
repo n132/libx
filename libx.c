@@ -228,7 +228,9 @@ void setsuid(char *filename){
         debug();
 */
 void debug(){
-    puts("[!] DEBUG");
+    printf("\033[33m");
+    printf("[!] DEBUG");
+    printf("\033[0m\n");
     char buf[0x10];
     read(0,buf,0xf);
 }
