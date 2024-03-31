@@ -276,7 +276,7 @@ int msgGet(){
 void msgSend(int msgid,char *text,size_t size){
     msgMsg* msg = (msgMsg *)malloc(sizeof(long)+size+0x1);
     msg->mtype = 04000; // IPC_NOWAIT / Message type (can be any positive integer)
-    strncpy(msg->mtext, text, size);
+    memcpy(msg->mtext, text, size);
     // Send the message
     if (syscall(SYS_msgsnd, msgid, msg, size, 0)<0) {
         perror("msgsnd");
