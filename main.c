@@ -46,7 +46,7 @@ int main(){
     // char pp = *p;
     //msgqid = msgget(IPC_PRIVATE, 0644 | IPC_CREAT);
     
-    msgSpray_t *spray = msgSpray(0x50,0x100,"n132");
+    msgSpray_t *spray = msgSpray(0x50,0x100,NULL);
     msgSprayClean(spray);
 
 }
