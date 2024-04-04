@@ -24,6 +24,7 @@
 #include <signal.h>
 #include <linux/socket.h>
 
+#define MSG_COPY        040000  /* copy (not remove) all queue messages */
 
 /*
     Name: msgSpray_t
