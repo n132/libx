@@ -23,6 +23,8 @@
 #include <stddef.h>
 #include <signal.h>
 #include <linux/socket.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #define MSG_COPY        040000  /* copy (not remove) all queue messages */
 
