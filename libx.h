@@ -3,6 +3,10 @@
 #define LIBX
 #define PAGE_SIZE 0x1000
 #define TTYMAGIC 0x5401
+#define NO_ASLR_BASE 0xffffffff81000000
+#define SOCKET_NUM 8
+#define SK_BUFF_NUM 0x80
+#define PIPE_NUM 256
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -51,7 +55,7 @@ typedef struct msgSpray_t {
 char* hex(size_t num);
 void panic(const char *text);
 void shell();
-void info(size_t);
+void info(const char *text);
 void* userfaultfd_leak_handler(void*);
 size_t * forze();
 
@@ -83,6 +87,10 @@ extern size_t commit_creds;
 extern size_t prepare_kernel_cred;
 extern void (*back2user)();
 void getRootPrivilige();
+
+
+
+
 
 
 #endif
