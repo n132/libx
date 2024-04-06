@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #ifndef LIBX
 #define LIBX
 #define PAGE_SIZE 0x1000
@@ -25,6 +26,7 @@
 #include <linux/socket.h>
 #include <sys/socket.h>
 #include <sys/un.h>
+#include<assert.h>
 
 #define MSG_COPY        040000  /* copy (not remove) all queue messages */
 
@@ -61,9 +63,9 @@ void DEBUG();
 __u8 *p64(size_t);
 __u8 * dp(__u8 * c,size_t n);
 __u8 * flatn(size_t *values,size_t n);
-size_t findp64(__u8 *stack,size_t value, size_t n);
+int findp64(__u8 *stack,size_t value, size_t n);
 char *str(int a);
-size_t swab(size_t);
+size_t xswab(size_t);
 void modprobeAtk(char * path, char * cmd);
 // Part II: MSGMSG related
 typedef struct msgQueueMsg{

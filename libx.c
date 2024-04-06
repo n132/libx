@@ -58,7 +58,7 @@ void info(size_t val){
     // Reset to default color
     printf("\033[0m\n");
 }
-size_t swab(size_t val){
+size_t xswab(size_t val){
     size_t res = 0;
     size_t  arr[0x8] = {0};
     for(int i = 0 ; i <0x8;i++){
@@ -434,10 +434,10 @@ __u8 * flatn(size_t *values,size_t n){
         find a specific pointer in a chunk of memory
         and return the offset
     Example:
-        sizez_t off = findp64(stack,0xdeadbeef,0x100)
+        int off = findp64(stack,0xdeadbeef,0x100)
 */
 
-size_t findp64(__u8 *stack,size_t value, size_t n){
+int findp64(__u8 *stack,size_t value, size_t n){
     size_t * ptr;
     if(n<8)
         panic("[-] There is not enough space for searching");
@@ -446,7 +446,7 @@ size_t findp64(__u8 *stack,size_t value, size_t n){
         if(value == *ptr)
             return i;
     }
-    return NULL;
+    return -1;
 }
 /*
     Name: str
