@@ -187,7 +187,7 @@ save_status for ret2user
 */
 void sigsegv_handler(int sig, siginfo_t *si, void *unused) {
     
-    puts("[+] Libx: SegFault Handler is spwaning a shell...");
+    info("Libx: SegFault Handler is spwaning a shell...");
     system("/bin/sh");
     while(1); // Techniquly, we never his this line
 }
@@ -557,7 +557,7 @@ void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
 void pipeBufferResize(int fd,size_t count){
     size_t res = fcntl(fd,F_SETPIPE_SZ,0x1000*count);
     if(res ==0x1000*count)
-        info("[+] PipeBuffer resized");
+        info("PipeBuffer resized");
     else
         panic("Failed to resize the PipeBuffer");
 }
