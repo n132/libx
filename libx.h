@@ -48,7 +48,7 @@ typedef struct msgSpray_t {
 
 
 // size_t user_cs, user_ss, user_rflags, user_sp;
-
+char* hex(size_t num);
 void panic(const char *text);
 void shell();
 void info(size_t);

@@ -24,6 +24,11 @@ size_t msgLimit(){
         return MSGLIMIT;
     }
 }
+char * hex(size_t num){
+    char *buf = malloc(0x20);
+    snprintf(buf,0x20,"0x%x",num);
+    return buf;
+}
 void warn(const char* text) {
     // Yellow color code
     printf("\033[0;33m");
