@@ -1,11 +1,11 @@
 # libx
 
-It's a personal c language library for kernel exploiting. 
+It's a personal c language library for kernel exploits. 
 
 # Usage
 
 
-Install libx
+Install `libx`
 ```bash
 git clone git@github.com:n132/libx.git
 cd libx
@@ -14,7 +14,7 @@ make install
 ```
 
 
-uninstall libx
+uninstall `libx`
 ```bash
 make clean
 make uninstall
