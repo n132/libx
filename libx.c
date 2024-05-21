@@ -274,7 +274,7 @@ int msgGet(){
     Desc:
         Insert a new message to a msgqueue
     Example:
-        msgSend(msgid,"libx",5,1);
+        msgSend(msgid,"libx",5);
 */
 void msgSend(int msgid,char *text,size_t size){
     msgMsg* msg = (msgMsg *)malloc(sizeof(long)+size+0x1);
