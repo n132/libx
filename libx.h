@@ -51,6 +51,7 @@ typedef struct msgSpray_t {
 } msgSpray_t;
 
 
+typedef size_t u64;
 // size_t user_cs, user_ss, user_rflags, user_sp;
 char* hex(size_t num);
 void panic(const char *text);
