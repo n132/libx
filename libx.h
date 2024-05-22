@@ -79,7 +79,7 @@ typedef struct msgQueueMsg{
 } msgMsg;
 // int msgQueueCreate(char *s);
 int msgGet();
-void msgSend(int msgid,char *text,size_t size);
+void msgSend(int msgid,size_t size,char *text);
 msgMsg* msgRecv(int msgid,size_t size);
 void msgDel(int msgid);
 
@@ -88,9 +88,6 @@ extern size_t commit_creds;
 extern size_t prepare_kernel_cred;
 extern void (*back2user)();
 void getRootPrivilige();
-
-
-
 
 
 

@@ -269,14 +269,8 @@ int msgGet(){
         panic("[-] Failed to create a msg queue");
     return res;
 }
-/*
-    Name: msgSend
-    Desc:
-        Insert a new message to a msgqueue
-    Example:
-        msgSend(msgid,"libx",5);
-*/
-void msgSend(int msgid,char *text,size_t size){
+
+void msgSend(int msgid,size_t size,char *text){
     msgMsg* msg = (msgMsg *)malloc(sizeof(long)+size+0x1);
     msg->mtype = 04000; // IPC_NOWAIT / Message type (can be any positive integer)
     memcpy(msg->mtext, text, size);
@@ -339,7 +333,7 @@ msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
         memset(ctx,0x69,size);
     }
     for(int i = 0 ; i < num ; i++){
-        msgSend(msg_id,ctx,size);
+        msgSend(msg_id,size,ctx);
     }
     msgSpray_t * record = calloc(1,sizeof(msgSpray_t));
     record->ctx = ctx;
