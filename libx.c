@@ -29,6 +29,16 @@ char * hex(size_t num){
     snprintf(buf,0x20,"%p",num);
     return buf;
 }
+void success(size_t val){
+    // Green color code
+    printf("\033[0;32m[+] ");
+    printf("%p", val);
+    // Reset to default color
+    printf("\033[0m\n");
+}
+void info(const char *text){
+    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
+}
 void warn(const char* text) {
     // Yellow color code
     printf("\033[0;33m");
@@ -36,7 +46,6 @@ void warn(const char* text) {
     // Reset to default color
     printf("\033[0m\n");
 }
-
 void panic(const char *text){
     // Red color code
     printf("\033[0;31m");
@@ -51,16 +60,7 @@ void shell(){
     else
         panic("[!] Failed to Escape");
 }
-void info(const char *text){
-    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
-}
-void success(size_t val){
-    // Green color code
-    printf("\033[0;32m[+] ");
-    printf("%p", val);
-    // Reset to default color
-    printf("\033[0m\n");
-}
+
 size_t xswab(size_t val){
     size_t res = 0;
     size_t  arr[0x8] = {0};
@@ -304,7 +304,8 @@ msgMsg* msgRecv(int msgid,size_t size){
     }
     return recv;
 }
-msgMsg* msgPeek(int msgid,size_t size){
+msgMsg* msgPeek(int msgid){
+    size_t size = 0xffff;
     msgMsg* recv = (msgMsg *)malloc(sizeof(long)+size+1);
     if (msgrcv(msgid, recv, size, 0, MSG_NOERROR | IPC_NOWAIT | MSG_COPY )<0) {
         perror("msgrcv");
