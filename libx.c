@@ -10,6 +10,7 @@ size_t fread_u64(const char *fname)
 {
     size_t size = 0x100;
 	FILE *f = fopen(fname, "r");
+    if(!f) return 0xdeadbeef;
 	char *buf = calloc(1,size+1);
 	fread(buf, 1, size, f);
 	buf[size] = 0;
@@ -19,8 +20,12 @@ size_t fread_u64(const char *fname)
 size_t MSGLIMIT =0 ;
 size_t msgLimit(){
     if(!MSGLIMIT){
-        int size = fread_u64(MSGMNB_FILE);;
-        warn(hex(size));
+        size_t size = fread_u64(MSGMNB_FILE);;
+        if(size == 0xdeadbeef)
+        {
+            warn("Failed to load MSG Limit, asssume it's 8192");
+            size = 8192;
+        }    
         MSGLIMIT = size;
         return size;
     }else{
