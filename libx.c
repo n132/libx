@@ -19,7 +19,10 @@ size_t fread_u64(const char *fname)
 size_t MSGLIMIT =0 ;
 size_t msgLimit(){
     if(!MSGLIMIT){
-        return fread_u64(MSGMNB_FILE);
+        int size = fread_u64(MSGMNB_FILE);;
+        warn(hex(size));
+        MSGLIMIT = size;
+        return size;
     }else{
         return MSGLIMIT;
     }
@@ -354,12 +357,12 @@ msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
     size_t msg_object_size = msg_len+0x30;
     if( msg_object_size > msgLimit ) panic("[-] The size of msg object is larger than the limit of msg queue");
     if( msg_object_size > PAGE_SIZE) warn("[!] Msg object size > PAGE_SIZE, this could not be what you want");
+    info("a");
     size_t max_msg_num_pre_queue = msgLimit() / msg_object_size;
     msgSpray_t * ret  = NULL;
     msgSpray_t * next = NULL;
     size_t this_round = NULL;
     while(num > 0){
-        
         this_round = num > max_msg_num_pre_queue ? max_msg_num_pre_queue: num;
         next  = _msgSpray(msg_len, this_round, ctx);
         
