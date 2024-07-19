@@ -566,7 +566,7 @@ void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
 void pipeBufferResize(int fd,size_t count){
     size_t res = fcntl(fd,F_SETPIPE_SZ,0x1000*count);
     if(res ==0x1000*count)
-        info("PipeBuffer resized");
+        return;// info("PipeBuffer resized");
     else
         panic("Failed to resize the PipeBuffer");
 }
