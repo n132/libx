@@ -361,7 +361,6 @@ msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
 msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
     size_t msg_object_size = msg_len+0x30;
     if( msg_object_size > msgLimit ) panic("[-] The size of msg object is larger than the limit of msg queue");
-    if( msg_object_size > PAGE_SIZE) warn("[!] Msg object size > PAGE_SIZE, this could not be what you want");
     size_t max_msg_num_pre_queue = msgLimit() / msg_object_size;
     msgSpray_t * ret  = NULL;
     msgSpray_t * next = NULL;
