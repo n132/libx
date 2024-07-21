@@ -39,14 +39,21 @@
         saveStatus();
     }
 #endif // 
+
+
 int main(){
     // save_status();
     // hook_segfault();
     // char *p = 0;
     // char pp = *p;
     //msgqid = msgget(IPC_PRIVATE, 0644 | IPC_CREAT);
-    size_t num = 0xdeadbeef;
-    char *buf = malloc(0x20);
-    return buf;
-
+    // size_t num = 0xdeadbeef;
+    // char *buf = malloc(0x20);
+    // return buf;
+    if(!getuid())
+    {
+        magic();
+    }
+    else
+        panic("This function is used for debugging. Login as root first.");
 }

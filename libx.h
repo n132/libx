@@ -89,7 +89,5 @@ extern size_t prepare_kernel_cred;
 extern void (*back2user)();
 void getRootPrivilige();
 
-
-
 #endif
 

