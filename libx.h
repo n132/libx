@@ -32,6 +32,7 @@
 #include <sys/un.h>
 #include <assert.h>
 #include <linux/if_packet.h>
+#include <keyutils.h>
 
 #define MSG_COPY        040000  /* copy (not remove) all queue messages */
 
