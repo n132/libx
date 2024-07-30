@@ -563,6 +563,15 @@ void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
         write(pipe_fd[i][1], "pipe_buffer init", 17)>=0;
     }
 }
+void initPipeBuffern(int pipe_fd[PIPE_NUM][2],int num){
+    assert(num<=PIPE_NUM);
+
+    for(int i  = 0 ; i < num ; i++)
+    {
+        pipe(pipe_fd[i]);
+        write(pipe_fd[i][1], "pipe_buffer init", 17)>=0;
+    }
+}
 void pipeBufferResize(int fd,size_t count){
     size_t res = fcntl(fd,F_SETPIPE_SZ,0x1000*count);
     if(res ==0x1000*count)
