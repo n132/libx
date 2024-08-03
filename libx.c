@@ -257,7 +257,7 @@ void hexdump(void * addr, size_t len){
     printf("HexDump:\n");
     int more = (len%0x10) ? 1:0;
     for(int i = 0 ; i < (len/0x10)+ more; i++){
-        printf("0x%016llx:\t0x%016llx\t0x%016llx\n",addr+i*0x10, *(u64 *)(addr+i*0x10), *(u64 *)(addr+i*0x10+8));
+        printf("0x%016llx:\t0x%016llx\t0x%016llx\n",i*0x10, *(u64 *)(addr+i*0x10), *(u64 *)(addr+i*0x10+8));
     }
 }
 /*
