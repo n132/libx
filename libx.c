@@ -320,8 +320,7 @@ msgMsg* msgRecv(int msgid,size_t size){
     }
     return recv;
 }
-msgMsg* msgPeek(int msgid){
-    size_t size = 0xffff;
+msgMsg* msgPeek(int msgid,size_t size){
     msgMsg* recv = (msgMsg *)calloc(1,sizeof(long)+size+1);
     if (msgrcv(msgid, recv, size, 0, MSG_NOERROR | IPC_NOWAIT | MSG_COPY )<0) {
         perror("msgrcv");
