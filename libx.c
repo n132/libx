@@ -1,9 +1,9 @@
 #include "libx.h"
 
 #define MSGMNB_FILE "/proc/sys/kernel/msgmnb"
-
+int leak_KASLR();
 /*
-Utils 
+    Utils 
 */
 
 size_t fread_u64(const char *fname)
@@ -75,7 +75,6 @@ void shell(){
     else
         panic("[!] Failed to Escape");
 }
-
 size_t xswab(size_t val){
     size_t res = 0;
     size_t  arr[0x8] = {0};
