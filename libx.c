@@ -1,7 +1,6 @@
 #include "libx.h"
 
 #define MSGMNB_FILE "/proc/sys/kernel/msgmnb"
-int leak_KASLR();
 /*
     Utils 
 */

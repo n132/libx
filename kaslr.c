@@ -56,11 +56,8 @@ uint64_t leak_syscall_entry(void)
     return addr;
 }
 
-int leak_KASLR()
+int leakKASLR()
 {
     printf ("KASLR base %llx\n", leak_syscall_entry() - entry_SYSCALL_64_offset);
 }
 
-int main(){
-    leak_KASLR();
-}

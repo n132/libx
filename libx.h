@@ -33,7 +33,6 @@
 #include <assert.h>
 #include <linux/if_packet.h>
 #include <keyutils.h>
-#include "kaslr.h"
 #define MSG_COPY        040000  /* copy (not remove) all queue messages */
 
 /*
@@ -90,6 +89,7 @@ extern size_t commit_creds;
 extern size_t prepare_kernel_cred;
 extern void (*back2user)();
 void getRootPrivilige();
+extern int leakKASLR();
 
 #endif
 
