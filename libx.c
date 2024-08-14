@@ -606,6 +606,86 @@ void magic(){
     leak_kallsyms("swapgs_restore_regs_and_return_to_usermode");
 }
 
+#define PAGE_ALLOC_COSTLY_ORDER 3
+#define DIV_ROUND_UP __KERNEL_DIV_ROUND_UP
+#define __KERNEL_DIV_ROUND_UP(n, d) (((n) + (d) - 1) / (d))
+size_t slab_size[] = {0x8,0x10,0x20,0x40,0x60,0x80,0xc0,0x100,0x200,0x400,0x800,0x1000,0x2000};
+int _nr_objs(int size){
+    if(size>=0x1000)
+        return 6;
+    else if(size>= 1024)
+        return 24;
+    else if(size>= 256)
+        return 52;
+    else
+        return 120;
+}
+char *_size2slabsize(int size){
+    if(size<=0x200)
+        return  str(size);
+    else if(size==0x400)
+        return "1k";
+    else if(size==0x800)
+        return "2k";
+    else if(size==0x1000)
+        return "4k";
+    else if(size==0x2000)
+        return "8k";
+    else
+        panic("_size2slabsize");
+}
+int _system_ret_int(char *cmd)
+{    char buffer[128];
+    int result = 0;
+    FILE *fp;
+
+    // Run the system command and open a pipe to read its output
+    fp = popen(cmd, "r");
+    if (fp == NULL) 
+        panic("Failed to run command\n");
+    
+
+    // Read the output a line at a time
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) 
+        result = atoi(buffer);
+    
+
+    // Close the pipe
+    pclose(fp);
+    return result;
+}
+size_t slab_get_size(int size){
+    char * cmd = calloc(1,0x100);
+    strncpy(cmd,"cat /proc/slabinfo| grep \"^kmalloc-",0x100);
+    strncat(cmd,_size2slabsize(size),0x100);
+    strncat(cmd,"\\s\" | awk \'{print $6}\'",0x100);
+    return  _system_ret_int(cmd)*0x1000;
+}
+size_t slab_get_oo(int size){
+    char * cmd = calloc(1,0x100);
+    strncpy(cmd,"cat /proc/slabinfo| grep \"^kmalloc-",0x100);
+    strncat(cmd,_size2slabsize(size),0x100);
+    strncat(cmd,"\\s\" | awk \'{print $5}\'",0x100);
+    return  _system_ret_int(cmd);
+}
+size_t slab_get_partial(int size){
+
+    size_t nr_objs = _nr_objs(size);
+    // warn(hex(slab_get_oo(size)));
+    return __KERNEL_DIV_ROUND_UP((nr_objs*2),slab_get_oo(size));
+}
+
+void dump_cpu_partial_slabs(){
+    success("====cpu_partial_slabs====");
+    char *buf = calloc(1,0x100);
+    for(int j = 0 ; j < sizeof(slab_size) / sizeof(size_t) ; j++ ){
+        size_t res = slab_get_partial(slab_size[j]);
+        snprintf(buf,0x100,"kmalloc-%-4d\t\t\t: %p",slab_size[j],res);
+        info(buf);
+    }
+    free(buf);
+    success("====cpu_partial_slabs====");
+}
 
 /*
     Page Allocation
