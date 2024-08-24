@@ -90,6 +90,6 @@ extern size_t prepare_kernel_cred;
 extern void (*back2user)();
 void getRootPrivilige();
 extern int leakKASLR();
-
+msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx);
 #endif
 

