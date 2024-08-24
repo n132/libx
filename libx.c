@@ -722,7 +722,7 @@ void sandbox()
     ```
     spaInit();
     for(int i = 0 ; i < 0x100 ; i++)
-        spaCmd(ALLOC_PAGE,i);
+        spaCmd(ADD,i);
     ```
 */
 void pgvAdd(){

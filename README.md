@@ -2,6 +2,12 @@
 
 It's a personal c language library for kernel exploits. 
 
+# Dependencies
+
+```sh
+sudo apt install fuse libfuse-dev libkeyutils-dev
+```
+
 # Usage
 
 
