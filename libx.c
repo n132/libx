@@ -873,3 +873,17 @@ void cloneRoot(void )
 {
     _cloneRoot(cloneRoot_FLAG,_cloneRootShell);
 }
+void implimit(){
+    int cpid = fork();
+    if(!cpid)
+    {
+        char buf[0x100]={};
+        int pid = getppid();
+        snprintf(buf,0x100,"prlimit -n65536 -p %d",pid);
+        info(buf);
+        system(buf);
+        exit(0);
+    }
+    int status;
+    waitpid(cpid, &status, 0);        
+}
