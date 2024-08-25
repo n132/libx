@@ -537,7 +537,12 @@ void getRootPrivilige()
         -> initSocketArray
         -> spraySkBuff
 */
-
+void initSocketArrayN(int sk_socket[SOCKET_NUM][2],size_t nr){
+    for(int i = 0 ; i < nr ; i++)
+        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
+            panic("Failed to create sockect pairs!\n");
+    info("Finish: initSocketArray");
+}
 void initSocketArray(int sk_socket[SOCKET_NUM][2]){
     for(int i = 0 ; i < SOCKET_NUM ; i++)
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
