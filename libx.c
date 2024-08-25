@@ -568,8 +568,11 @@ void skbuffSend(int skt,__u8 * ctx, size_t size){
 void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
     for(int i  = 0 ; i < PIPE_NUM ; i++)
     {
-        pipe(pipe_fd[i]);
-        write(pipe_fd[i][1], "pipe_buffer init", 17)>=0;
+        if(!pipe(pipe_fd[i])){
+            panic("Failed to allocate pipe buffers");
+            panic(hex(i));
+        }
+        write(pipe_fd[i][1], "pipe_buffer init", 16);
     }
 }
 void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
@@ -577,7 +580,7 @@ void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
     for(int i  = 0 ; i < num ; i++)
     {
         pipe(pipe_fd[i]);
-        write(pipe_fd[i][1], "pipe_buffer init", 17)>=0;
+        write(pipe_fd[i][1], "pipe_buffer init", 16);
     }
 }
 void pipeBufferResize(int fd,size_t count){
