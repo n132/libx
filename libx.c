@@ -895,3 +895,44 @@ void implimit(){
     int status;
     waitpid(cpid, &status, 0);        
 }
+
+/*
+    timerfd
+*/
+int create_timer(int tv_sec)
+{
+    struct itimerspec new_value;
+    memset(&new_value, 0, sizeof(new_value));
+    new_value.it_value.tv_sec = tv_sec;  // Initial expiration
+    new_value.it_interval.tv_sec = 0;  // Interval for periodic timer
+    int tfd = timerfd_create(CLOCK_REALTIME, 0);
+    timerfd_settime(tfd, 0, &new_value, 0);
+    return tfd;
+}
+
+/*
+    key options
+*/
+
+int key_alloc(char *description, char *payload, int payload_len)
+{
+    return syscall(__NR_add_key, "user", description, payload, payload_len,
+                   KEY_SPEC_PROCESS_KEYRING);
+}
+int key_revoke(int keyid)
+{
+    return syscall(__NR_keyctl, KEYCTL_REVOKE, keyid, 0, 0, 0);
+}
+int key_update(int keyid, char *payload, size_t plen)
+{
+    return syscall(__NR_keyctl, KEYCTL_UPDATE, keyid, payload, plen);
+}
+/*
+    Pin CPU
+*/
+void pinCPU(int id){
+    cpu_set_t my_set;
+    CPU_ZERO(&my_set);
+    CPU_SET(id, &my_set);
+    sched_setaffinity(getpid(), sizeof(cpu_set_t), &my_set);
+}
