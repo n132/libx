@@ -93,7 +93,7 @@ extern void (*back2user)();
 void getRootPrivilige();
 msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx);
 
-extern int leakKASLR();
+extern int  leakKASLR();
 extern void * initFuse(void);
 #endif
 

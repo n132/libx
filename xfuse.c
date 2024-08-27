@@ -1,11 +1,4 @@
-#define FUSE_USE_VERSION 34
-#include <linux/fuse.h>
-#include <fuse.h>
-#include <errno.h>
-#include <sched.h>
-#include <sys/mman.h>
-#define FUSE_MEM_ADDR 0xdeadbeef000
-
+#include "xfuse.h"
 static int getattr_callback(const char *path, struct stat *stbuf)
 {
     memset(stbuf, 0, sizeof(struct stat));
