@@ -57,7 +57,6 @@ void *fuse_thread(void *_arg)
     struct fuse_args args = FUSE_ARGS_INIT(0, NULL);
     struct fuse_chan *chan;
     struct fuse *fuse;
-
     if (mkdir("/tmp/test", 0777))
         panic("mkdir(\"/tmp/test\")");
 
@@ -70,7 +69,7 @@ void *fuse_thread(void *_arg)
         panic("fuse_new");
     }
 
-    if (sched_setaffinity(getpid(), sizeof(cpu_set_t), &pwn_cpu))
+    if (sched_setaffinity(0, sizeof(cpu_set_t), &pwn_cpu))
         panic("sched_setaffinity");
 
     fuse_set_signal_handlers(fuse_get_session(fuse));
@@ -87,7 +86,7 @@ void *mmap_fuse_file(void)
         close(pwn_fd);
     pwn_fd = open("/tmp/test/pwn", O_RDWR);
     if (pwn_fd == -1)
-        panic("/tmp/test/pwn");
+        panic("Failed to open /tmp/test/pwn");
 
     void *page;
     page = mmap(FUSE_MEM_ADDR, 0x1000, PROT_READ | PROT_WRITE,

