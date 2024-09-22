@@ -1,6 +1,6 @@
 #include <stdint.h>
 #include <stdio.h>
-#define entry_SYSCALL_64_offset 0xa00000ull
+#define entry_SYSCALL_64_offset 0x100000ull
 
 
 #define KERNEL_LOWER_BOUND 0xffffffff80000000ull
