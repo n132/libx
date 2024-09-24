@@ -51,7 +51,7 @@
 #define STEP                        0x200000 // CONFIG_PHYSICAL_ALIGN=0x200000
 #define KERNEL_LOWER_BOUND          0xffffffff80000000ull
 #define KERNEL_UPPER_BOUND          0xffffffffc0000000ull
-#define entry_SYSCALL_64_offset     0x40000ull
+#define entry_SYSCALL_64_offset     0x1400000ull
 #define SCAN_START                  KERNEL_LOWER_BOUND 
 #define SCAN_END                    KERNEL_UPPER_BOUND 
 #define ARR_SIZE                    (SCAN_END - SCAN_START) / STEP
