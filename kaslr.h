@@ -48,7 +48,7 @@
 
 // Do the similar computing for Phys_map area and found it has 16-bit randomization
 
-#define STEP                        0x200000 // CONFIG_PHYSICAL_ALIGN=0x200000
+#define STEP                        0x200000ull // CONFIG_PHYSICAL_ALIGN=0x200000
 #define KERNEL_LOWER_BOUND          0xffffffff80000000ull
 #define KERNEL_UPPER_BOUND          0xffffffffc0000000ull
 #define entry_SYSCALL_64_offset     0x1400000ull
@@ -61,14 +61,16 @@
 
 
 // 0x40000000 == 1GB which is slot_areas's step
-#define STEP_PHYS                   0x40000000
-#define PHYS_LOWER_BOUND            0xffff888000000000
-#define PHYS_UPPER_BOUND            0xfffffe0000000000
+#define STEP_PHYS                           0x40000000ull
+#define PHYS_LOWER_BOUND            0xffff887000000000ull
+// Assume the target has less than 1T RAM
+#define PHYS_UPPER_BOUND            0xffffa45555555555ull
+                                    
 #define SCAN_START_PHYS             PHYS_LOWER_BOUND
 #define SCAN_END_PHYS               PHYS_UPPER_BOUND
 #define ARR_SIZE_PHYS               (SCAN_END_PHYS - SCAN_START_PHYS) / STEP_PHYS
 
 
 
-#define DUMMY_ITERATIONS            5
-#define ITERATIONS                  100
+#define DUMMY_ITERATIONS            5ull
+#define ITERATIONS                  100ull

