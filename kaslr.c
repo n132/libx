@@ -133,7 +133,6 @@ uint64_t leak_phys(void)
             min = data[i];
             addr = SCAN_START_PHYS + i * STEP_PHYS;
             idxxx = i;
-            // printf("%p %p pre: %p\n",addr,min,data[i-1]);
         }
     }
 
@@ -148,16 +147,11 @@ uint64_t leak_phys(void)
                 //outliner
                 continue;
             }
-            // Find the `dent`
-            // printf("[X] MIN: %p\n",min);
-            // if(idxxx==i){
-            //     printf("%d %d %d",data[i]< previous_data,(double)previous_data*0.95 > (double)data[i],data[i] < min*1.0625);
-            // }
+      
             if( data[i]< previous_data && \
                 (double)previous_data*0.9375 > (double)data[i] && \
                 data[i] < min*1.0625 )
             {
-                // printf("[X] pre: %p cur: %p min: %p\n",previous_data,data[i],min);
                 addr = SCAN_START_PHYS + i * STEP_PHYS;
                 break;
             }
