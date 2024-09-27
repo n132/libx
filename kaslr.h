@@ -47,7 +47,7 @@
 */
 
 // Do the similar computing for Phys_map area and found it has 16-bit randomization
-
+// 2M
 #define STEP                        0x200000ull // CONFIG_PHYSICAL_ALIGN=0x200000
 #define KERNEL_LOWER_BOUND          0xffffffff80000000ull
 #define KERNEL_UPPER_BOUND          0xffffffffc0000000ull
@@ -61,6 +61,7 @@
 
 
 // 0x40000000 == 1GB which is slot_areas's step
+// 1GB
 #define STEP_PHYS                           0x40000000ull
 #define PHYS_LOWER_BOUND            0xffff887000000000ull
 // Assume the target has less than 1T RAM

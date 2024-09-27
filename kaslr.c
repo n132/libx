@@ -124,7 +124,6 @@ uint64_t leak_phys(void)
                 data[idx] += time;
         }
     }
-    size_t idxxx = -1;
     for (int i = 0x40; i < ARR_SIZE_PHYS; i++)
     {
         data[i] /= ITERATIONS;
@@ -132,7 +131,7 @@ uint64_t leak_phys(void)
         {
             min = data[i];
             addr = SCAN_START_PHYS + i * STEP_PHYS;
-            idxxx = i;
+            // printf("[X] Cur: %p, Pre: %p, Addr: %p\n",data[i],data[i-1],addr);
         }
     }
 
