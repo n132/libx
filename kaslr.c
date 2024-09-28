@@ -161,7 +161,7 @@ uint64_t leak_phys(void)
 }
 size_t leakPHYS(size_t offset){
     size_t val =  leak_phys()-0x100000000;
-    printf ("PHAMAP base %llx\n",val);
+    printf ("PHYSMAP base %llx\n",val);
     return val;
 }
 

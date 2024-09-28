@@ -75,7 +75,8 @@ typedef struct
 
 
 // Externel funcs
-extern int          leakKASLR();
+extern size_t          leakKASLR();
+extern size_t          leakPHYS();
 extern void *       initFuse(void);
 extern int sk_fd[0x20][2];
 extern int pipe_fd[PIPE_NUM*4][2];
