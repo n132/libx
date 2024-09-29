@@ -728,8 +728,25 @@ void pinCPU(int id){
     CPU_SET(id, &my_set);
     sched_setaffinity(0, sizeof(cpu_set_t), &my_set);
 }
-
-
+void set_rflags(unsigned long flags) {
+    __asm__ volatile ("push %0; popf" : : "r"(flags) : "cc");
+}
+void set_gs_base(uint64_t base) {
+    __asm__ volatile ("wrgsbase %0" : : "r" (base));
+}
+size_t user_cs, user_ss, user_rflags, user_sp;
+void saveStatus()
+{
+    __asm__ (
+        "mov %0, cs;"        // Move cs register to user_cs
+        "mov %1, ss;"        // Move ss register to user_ss
+        "mov %2, rsp;"       // Move rsp register to user_sp
+        "pushf;"             // Push flags register to stack
+        "pop %3;"            // Pop flags register into user_rflags
+        : "=r"(user_cs), "=r"(user_ss), "=r"(user_sp), "=r"(user_rflags) // Output operands
+    );
+    printf("\033[34m\033[1m[*] Status has been saved.\033[0m\n");
+}
 /*
     Initial Function for Libx
     The user may need init with libxInit

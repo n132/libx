@@ -29,7 +29,11 @@
 #include <keyutils.h>
 #include <sys/timerfd.h>
 #include <sys/resource.h>
-
+#include <sys/ptrace.h>
+#include <sys/user.h>
+#include <netinet/tcp.h>  // for SOL_TCP, TCP options
+#include <sys/prctl.h>
+#include <asm/prctl.h>
 // Definations
 #define MSG_COPY                    040000  /* copy (not remove) all queue messages */
 #define TTYMAGIC                    0x5401
@@ -80,6 +84,7 @@ extern size_t          leakPHYS();
 extern void *       initFuse(void);
 extern int sk_fd[0x20][2];
 extern int pipe_fd[PIPE_NUM*4][2];
+extern size_t user_cs, user_ss, user_rflags, user_sp;
 
 // Export global vas
 
