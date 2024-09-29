@@ -763,11 +763,11 @@ static void __attribute__((constructor)) init(void){
     setvbuf(stdin, NULL, _IONBF, 0);
 	setvbuf(stdout, NULL, _IONBF, 0);
 
-    urand_fd = open("/dev/urandom", 0);
-	if(unlikely(urand_fd < 0)) panic("Fail to open urandom");
-    size_t seed = 0;
-    read(urand_fd,&seed,sizeof(seed));
-    srand(seed);
+    // urand_fd = open("/dev/urandom", 0);
+	// if(unlikely(urand_fd < 0)) panic("Fail to open urandom");
+    // size_t seed = 0;
+    // read(urand_fd,&seed,sizeof(seed));
+    // srand(seed);
 
     optmem_max = fread_u64(OPTMEM_MAX_FILE);
     // libxInit();
