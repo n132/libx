@@ -87,5 +87,5 @@ extern int pipe_fd[PIPE_NUM*4][2];
 extern size_t user_cs, user_ss, user_rflags, user_sp;
 
 // Export global vas
-
+void shell(void);
 #endif
