@@ -757,6 +757,7 @@ void libxInit(){
     hook_segfault();
     initPipeBuffer(pipe_fd);
     initSocketArray(sk_fd);
+    saveStatus();
     success("Libx Inited");
 }
 static void __attribute__((constructor)) init(void){
