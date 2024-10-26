@@ -671,19 +671,22 @@ void cloneRoot(void )
 {
     _cloneRoot(cloneRoot_FLAG,_cloneRootShell);
 }
+
 void impLimit(){
-    pid_t pid = getpid(); // Process ID
+
     struct rlimit limit;
 
-    // Set soft limit and hard limit to 65536 for file descriptors
-    limit.rlim_cur = 65536;  // Soft limit
-    limit.rlim_max = 65536;  // Hard limit
-    // Use prlimit to set the resource limits of the process
-
-    if (prlimit(pid, RLIMIT_NOFILE, &limit, NULL) == -1) {
-        perror("prlimit");
-        exit(EXIT_FAILURE);
+    // Use prlimit to get the limits for RLIMIT_NOFILE
+    pid_t pid = 0;  // 0 refers to the current process
+    if (prlimit(pid, RLIMIT_NOFILE, NULL, &limit) == -1) {
+        perror("prlimit failed");
+        return 1;
     }
+
+    limit.rlim_cur = limit.rlim_max;  // Soft limit
+    limit.rlim_max = limit.rlim_max;  // Hard limit
+    // Use prlimit to set the resource limits of the process
+    prlimit(pid, RLIMIT_NOFILE, &limit, NULL);
 }
 
 /*
@@ -745,7 +748,7 @@ void saveStatus()
         "pop %3;"            // Pop flags register into user_rflags
         : "=r"(user_cs), "=r"(user_ss), "=r"(user_sp), "=r"(user_rflags) // Output operands
     );
-    printf("\033[34m\033[1m[*] Status has been saved.\033[0m\n");
+    // printf("\033[34m\033[1m[*] Status has been saved.\033[0m\n");
 }
 /*
     Initial Function for Libx
