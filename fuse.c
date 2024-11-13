@@ -1,4 +1,4 @@
-#include "xfuse.h"
+#include "fuse.h"
 static int getattr_callback(const char *path, struct stat *stbuf)
 {
     memset(stbuf, 0, sizeof(struct stat));

@@ -1,39 +1,41 @@
 #define _GNU_SOURCE
 #ifndef MYLIB_H
 #define LIBX "v1.0"
+
+#include <poll.h>
 #include <stdio.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <stdlib.h>
-#include <sys/wait.h>
-#include <sys/stat.h>
-#include <stdint.h>
 #include <errno.h>
+#include <stdint.h>
 #include <string.h>
+#include <stddef.h>
+#include <unistd.h>
+#include <signal.h>
+#include <sys/un.h>
+#include <assert.h>
+#include <stdlib.h>
 #include <sys/ipc.h>
 #include <sys/msg.h>
 #include <pthread.h>
-#include <sys/types.h>
-#include <linux/userfaultfd.h>
-#include <sys/syscall.h>
-#include <poll.h>
-#include <sys/mman.h>
-#include <stddef.h>
-#include <signal.h>
-#include <linux/socket.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <assert.h>
-#include <linux/if_packet.h>
 #include <keyutils.h>
-#include <sys/timerfd.h>
-#include <sys/resource.h>
-#include <sys/ptrace.h>
+#include <sys/wait.h>
+#include <sys/stat.h>
+#include <sys/mman.h>
 #include <sys/user.h>
-#include <netinet/tcp.h>  // for SOL_TCP, TCP options
 #include <sys/prctl.h>
 #include <asm/prctl.h>
+#include <sys/types.h>
+#include <sys/ioctl.h>
+#include <sys/ptrace.h>
+#include <sys/socket.h>
+#include <netinet/tcp.h>
+#include <sys/timerfd.h>
+#include <sys/syscall.h>
+#include <sys/resource.h>
+#include <linux/socket.h>
+#include <linux/if_packet.h>
+#include <linux/userfaultfd.h>
+
 // Definations
 #define MSG_COPY                    040000  /* copy (not remove) all queue messages */
 #define TTYMAGIC                    0x5401
@@ -62,12 +64,12 @@ typedef struct msgQueueMsg{
     char mtext[1];
 } msgMsg;
 typedef size_t u64;
+
 enum PG_VEC_CMD {
     ADD,
     FREE,
     EXIT
 };
-
 typedef struct
 {
     enum PG_VEC_CMD cmd;
@@ -79,13 +81,22 @@ typedef struct
 
 
 // Externel funcs
-extern size_t          leakKASLR();
-extern size_t          leakPHYS();
-extern void *       initFuse(void);
-extern int sk_fd[0x20][2];
-extern int pipe_fd[PIPE_NUM*4][2];
-extern size_t user_cs, user_ss, user_rflags, user_sp;
+extern size_t           leakKASLR();
+extern size_t           leakPHYS();
+extern void *           initFuse(void);
+extern int              sk_fd[0x20][2];
+extern int              pipe_fd[PIPE_NUM*4][2];
+extern size_t           user_cs, user_ss, user_rflags, user_sp;
 
 // Export global vas
 void shell(void);
+
+enum hfsc_class_flags {
+	HFSC_RSC = 0x1,
+	HFSC_FSC = 0x2,
+	HFSC_USC = 0x4
+};
+
+
+// net related
 #endif

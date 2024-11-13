@@ -673,9 +673,7 @@ void cloneRoot(void )
 }
 
 void impLimit(){
-
     struct rlimit limit;
-
     // Use prlimit to get the limits for RLIMIT_NOFILE
     pid_t pid = 0;  // 0 refers to the current process
     if (prlimit(pid, RLIMIT_NOFILE, NULL, &limit) == -1) {
