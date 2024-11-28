@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#define KASLR 0xffffffff81000000ull //nokaslr value for debugging
 
 // choose_random_location is the function set KASLR
 // -  find_random_phys_addr for phys_map

