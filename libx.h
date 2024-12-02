@@ -49,6 +49,7 @@
 #define cloneRoot_FLAG              CLONE_FILES | CLONE_FS | CLONE_VM | CLONE_SIGHAND
 #define OPTMEM_MAX_FILE             "/proc/sys/net/core/optmem_max"
 #define INITIAL_PG_VEC_SPRAY        0x200
+#define KASLR                       0xffffffff81000000ull //nokaslr value for debugging
 
 
 // Structs
