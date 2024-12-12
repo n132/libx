@@ -1,9 +1,8 @@
 #define _GNU_SOURCE
 #ifndef MYLIB_H
 #define LIBX "v1.0"
-
-#include <poll.h>
 #include <stdio.h>
+#include <poll.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <stdint.h>
@@ -35,6 +34,9 @@
 #include <linux/socket.h>
 #include <linux/if_packet.h>
 #include <linux/userfaultfd.h>
+#include <linux/pkt_sched.h>
+
+
 
 // Definations
 #define MSG_COPY                    040000  /* copy (not remove) all queue messages */
@@ -52,6 +54,10 @@
 #define KASLR                       0xffffffff81000000ull //nokaslr value for debugging
 #define MAGIC                       0xFFFFFFFFDEADBEEFull
 
+
+typedef unsigned long long u64;
+// typedef unsigned long long size_t;
+// typedef size_t u64;
 // Structs
 typedef struct msgSpray_t {
     struct msgSpray_t *next;
@@ -64,7 +70,6 @@ typedef struct msgQueueMsg{
     long mtype;
     char mtext[1];
 } msgMsg;
-typedef size_t u64;
 typedef unsigned int u32;
 
 enum PG_VEC_CMD {
@@ -93,12 +98,12 @@ extern size_t           user_cs, user_ss, user_rflags, user_sp;
 // Export global vas
 void shell(void);
 
-enum hfsc_class_flags {
-	HFSC_RSC = 0x1,
-	HFSC_FSC = 0x2,
-	HFSC_USC = 0x4
-};
-
+// enum hfsc_class_flags {
+// 	HFSC_RSC = 0x1,
+// 	HFSC_FSC = 0x2,
+// 	HFSC_USC = 0x4
+// };
+void libxInit(void );
 
 // net related
 #endif

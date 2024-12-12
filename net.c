@@ -155,3 +155,38 @@ struct tf_msg * hfscClassDel(u32 classid){
     m->tcm.tcm_handle        = classid;
     return m;
 }
+
+
+struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid, u32 parentid,u32 val){
+    // Kernel Handler: function  hfsc_change_class
+    /*
+        hfsc_changeclass:
+            - If the class exists, the function changes the attributes of the class
+            - else, create a new class
+    */
+    /*
+        parentid = 0 means q.root
+    */
+    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
+    init_tf_msg(m);
+    m->nlh.nlmsg_type       = RTM_NEWTCLASS;
+    m->tcm.tcm_parent       = parentid;
+    m->tcm.tcm_handle       = classid;
+    m->nlh.nlmsg_flags      |= NLM_F_CREATE;
+    m->nlh.nlmsg_len        += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("qfq") + 1, "qfq"));
+    
+    struct rtattr *opts     = (char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len);
+    opts->rta_type          = TCA_OPTIONS;
+    opts->rta_len           = RTA_LENGTH(0);
+    
+    if(type == TCA_QFQ_LMAX)
+        opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_QFQ_LMAX, sizeof(val), &val));
+    else if(type == TCA_QFQ_WEIGHT)
+        opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_QFQ_WEIGHT, sizeof(val), &val));
+    else{
+        err_exit("[-] qfqClassAdd: not support");
+        return -1;
+    }
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+    return m;
+}
