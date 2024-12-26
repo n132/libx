@@ -535,9 +535,9 @@ void sandbox()
 
     Usage:  
     ```
-    spaInit();
+    pgvInit();
     for(int i = 0 ; i < 0x100 ; i++)
-        spaCmd(ADD,i);
+        pgvCmd(ADD,i,order,num);
     ```
 */
 
