@@ -2,13 +2,15 @@
 /*
   For net submodule in linux kernel, got the code while reproducing CVES on kernelCTF  
 */
-#include <linux/netlink.h>
 #include <linux/rtnetlink.h>
+#include <linux/pkt_sched.h>
+#include <linux/netlink.h>
 #include <linux/pkt_cls.h>
+#include <linux/if_arp.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <linux/pkt_sched.h>
-#include <linux/if_arp.h>
 
 #define err_exit(s) do { perror(s); exit(EXIT_FAILURE); } while(0)
 typedef __u32 u32;
@@ -30,3 +32,8 @@ enum hfsc_class_flags {
 	HFSC_FSC = 0x2,
 	HFSC_USC = 0x4
 };
+
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef unsigned long long  u64;

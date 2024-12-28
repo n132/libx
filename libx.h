@@ -54,7 +54,11 @@
 #define KASLR                       0xffffffff81000000ull //nokaslr value for debugging
 #define MAGIC                       0xFFFFFFFFDEADBEEFull
 
-
+typedef __SIZE_TYPE__ 	size_t;
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef unsigned long long  u64;
 typedef unsigned long long u64;
 // typedef unsigned long long size_t;
 // typedef size_t u64;
@@ -70,7 +74,6 @@ typedef struct msgQueueMsg{
     long mtype;
     char mtext[1];
 } msgMsg;
-typedef unsigned int u32;
 
 enum PG_VEC_CMD {
     ADD,

