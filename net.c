@@ -159,14 +159,19 @@ struct tf_msg * hfscClassDel(u32 classid){
 
 
 struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , size_t size){
-    // 0x40 for header
+    // 0x3c for header
     // struct qdisc_size_table {
-    // 	struct rcu_head		rcu;
-    // 	struct list_head	list;
-    // 	struct tc_sizespec	szopts;
-    // 	int			refcnt;
-    // 	u16			data[];
-    // };
+    // 	struct callback_head       rcu __attribute__((__aligned__(8))); /*     0  0x10 */
+    // 	struct list_head           list;                 /*  0x10  0x10 */
+    // 	struct tc_sizespec         szopts;               /*  0x20  0x18 */
+    // 	int                        refcnt;               /*  0x38   0x4 */
+    // 	u16                        data[];               /*  0x3c     0 */
+
+    // 	/* size: 64, cachelines: 1, members: 5 */
+    // 	/* padding: 4 */
+    // 	/* forced alignments: 1 */
+    // } __attribute__((__aligned__(8)));
+
     struct tc_sizespec ctx;
     memset(&ctx,0,sizeof(struct tc_sizespec));
     ctx.cell_log = 10;
