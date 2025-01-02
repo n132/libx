@@ -35,6 +35,8 @@
 #include <linux/if_packet.h>
 #include <linux/userfaultfd.h>
 #include <linux/pkt_sched.h>
+#include <linux/rtnetlink.h>
+#include <net/if.h>
 
 
 
