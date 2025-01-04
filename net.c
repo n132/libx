@@ -197,7 +197,7 @@ struct tf_msg * hfscClassDel(u32 classid){
 
 
 
-struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , u64 size){
+struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size){
     // 0x3c for header
     // struct qdisc_size_table {
     // 	struct callback_head       rcu __attribute__((__aligned__(8))); /*     0  0x10 */
@@ -232,6 +232,23 @@ struct tf_msg * contactQdiscStab(struct tf_msg * m, char *data , u64 size){
 }
 // Macro for default parameters
 
+struct tf_msg *qfqQdiscChange(u32 handle, u32 parent) {
+    // Allocate and initialize the tf_msg structure
+    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+
+    init_tf_msg(m);
+
+    // Set up the Netlink message
+    m->nlh.nlmsg_type = RTM_NEWQDISC;     
+    m->nlh.nlmsg_flags |= NLM_F_REPLACE; // Change existing qdisc
+    m->tcm.tcm_handle = handle;
+    m->tcm.tcm_parent = parent;
+
+    // Set TCA_KIND to "qfq"
+    m->nlh.nlmsg_len += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("qfq") + 1, "qfq"));
+
+    return m;
+}
 
 struct tf_msg * qfqQdiscAdd(u32 handle, u32 parent) {
     // Kernel Handler: function hfsc_init_qdisc
