@@ -217,7 +217,7 @@ struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size){
     ctx.tsize    = size / sizeof(u16);
 
     // Expand the space
-    m = realloc(m, sizeof(struct tf_msg) + sizeof(struct tc_sizespec)+0x200);
+    m = realloc(m, sizeof(struct tf_msg) + sizeof(struct tc_sizespec)+0x200+size);
     
     struct rtattr *opts     = (char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len);
     opts->rta_type          = TCA_STAB;
