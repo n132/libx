@@ -147,6 +147,20 @@ struct tf_msg * hfscQdiscAdd(short defcls) {
     m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_OPTIONS, sizeof(defcls), &defcls));
     return m;
 }
+struct tf_msg *qdiscDel(u32 handle) {
+    // Allocate and initialize the message
+    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+    init_tf_msg(m);
+
+    // Set message type and flags for deleting a qdisc
+    m->nlh.nlmsg_type    = RTM_DELQDISC;     
+    m->nlh.nlmsg_flags   = 0; // No NLM_F_CREATE for deletion
+    m->tcm.tcm_handle    = handle; // Handle identifier
+    m->tcm.tcm_parent    = -1;      // Root qdisc
+
+    // Adjust the message length if needed, but no TCA_KIND for deletion
+    return m;
+}
 
 
 struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parentid){
@@ -197,7 +211,7 @@ struct tf_msg * hfscClassDel(u32 classid){
 
 
 
-struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size){
+struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size, int overhead){
     // 0x3c for header
     // struct qdisc_size_table {
     // 	struct callback_head       rcu __attribute__((__aligned__(8))); /*     0  0x10 */
@@ -215,7 +229,7 @@ struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size){
     memset(&ctx,0,sizeof(struct tc_sizespec));
     ctx.cell_log = 10;
     ctx.tsize    = size / sizeof(u16);
-
+    ctx.overhead = overhead;
     // Expand the space
     m = realloc(m, sizeof(struct tf_msg) + sizeof(struct tc_sizespec)+0x200+size);
     
@@ -231,7 +245,6 @@ struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size){
     return m;
 }
 // Macro for default parameters
-
 struct tf_msg *qfqQdiscChange(u32 handle, u32 parent) {
     // Allocate and initialize the tf_msg structure
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
@@ -243,7 +256,6 @@ struct tf_msg *qfqQdiscChange(u32 handle, u32 parent) {
     m->nlh.nlmsg_flags |= NLM_F_REPLACE; // Change existing qdisc
     m->tcm.tcm_handle = handle;
     m->tcm.tcm_parent = parent;
-
     // Set TCA_KIND to "qfq"
     m->nlh.nlmsg_len += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("qfq") + 1, "qfq"));
 
