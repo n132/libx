@@ -349,32 +349,6 @@ struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsig
     return m;
 }
 
-struct tf_msg * fwFilterAdd(int prio,  unsigned int flowid){
-    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
-    init_tf_msg(m); // Initialize the tf_msg structure
-    m->nlh.nlmsg_type   = RTM_NEWTFILTER;
-    m->nlh.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
-    m->tcm.tcm_info     = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
-    m->tcm.tcm_handle   = 0;
-    m->tcm.tcm_parent   = TC_H_ROOT; // Attach to the root qdisc
-
-    // Add filter kind (e.g., rsvp)
-    m->nlh.nlmsg_len += NLMSG_ALIGN(
-        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("fw") + 1, "fw")
-    );
-
-    // Add TCA_OPTIONS for filter rules
-    struct rtattr *opts = (struct rtattr *)((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
-    opts->rta_type = TCA_OPTIONS;
-    opts->rta_len = RTA_LENGTH(0);
-
-    // Add flowid to link this filter to a specific class
-    opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_FW_CLASSID, sizeof(flowid), &flowid));
-
-    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
-    return m;
-}
-
 
 struct tf_msg * netemQdiscAdd(const char *name,u32 handle, u32 parent, u32 usec) {
     // Learned from KCTF cve-2023-31436 write up
