@@ -319,7 +319,14 @@ struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
 }
 
 
+/*
+ Plan to write a function that creates a from the attribute name and value
+*/
+
 struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsigned int flowid) {
+    /*
+    Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
+    */
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
     init_tf_msg(m); // Initialize the tf_msg structure
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
@@ -339,10 +346,17 @@ struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsig
     opts->rta_type = TCA_OPTIONS;
     opts->rta_len = RTA_LENGTH(0);
 
-      // Add flowid to link this filter to a specific class
+    // Add flowid to link this filter to a specific class
     // unsigned int flowid = 0x10001; // Example flowid
+    u32 TCA_X_CLASSID = 1;
+    // Normally it's 1 but bfp's TCA_BPF_CLASSID==3
+    if(strcmp(classifier_name,"bfp"))
+        TCA_X_CLASSID = TCA_BASIC_CLASSID; 
+    else
+        TCA_X_CLASSID = 3;
+
     opts->rta_len += RTA_ALIGN(
-        add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_BASIC_CLASSID, sizeof(flowid), &flowid)
+        add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_X_CLASSID, sizeof(flowid), &flowid)
     );
 
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
