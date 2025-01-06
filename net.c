@@ -325,7 +325,8 @@ struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsig
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
     m->nlh.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
     m->tcm.tcm_info     = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
-    m->tcm.tcm_handle   = 0;
+    
+    m->tcm.tcm_handle   = flowid;
     m->tcm.tcm_parent   = 0;
 
     // Add filter kind (e.g., rsvp)
