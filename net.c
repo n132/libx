@@ -318,11 +318,31 @@ struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
     return m;
 }
 
+struct tf_msg *filterEdit(const char *classifier_name, unsigned short prio, unsigned int flowid) {
+    /*
+    Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
+    */
+    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+    init_tf_msg(m); // Initialize the tf_msg structure
+    m->nlh.nlmsg_type   = RTM_NEWTFILTER;
+    m->nlh.nlmsg_flags  = NLM_F_REQUEST | NLM_F_ACK | NLM_F_REPLACE;
+    m->tcm.tcm_info     = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
+    
+    m->tcm.tcm_handle   = flowid;
+    m->tcm.tcm_parent   = 0;
 
-/*
- Plan to write a function that creates a from the attribute name and value
-*/
+    // Add filter kind (e.g., rsvp)
+    m->nlh.nlmsg_len += NLMSG_ALIGN(
+        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(classifier_name) + 1, classifier_name)
+    );
+     // Add TCA_OPTIONS for filter rules
+    struct rtattr *opts = (struct rtattr *)((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
+    opts->rta_type = TCA_OPTIONS;
+    opts->rta_len = RTA_LENGTH(0);
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
 
+    return m;
+}
 struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsigned int flowid) {
     /*
     Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
