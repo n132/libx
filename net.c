@@ -319,7 +319,7 @@ struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
 }
 
 
-struct tf_msg *qfqFilterAdd(unsigned short prio) {
+struct tf_msg *qfqFilterAdd(unsigned short prio, unsigned int flowid) {
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
     init_tf_msg(m); // Initialize the tf_msg structure
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
@@ -339,7 +339,7 @@ struct tf_msg *qfqFilterAdd(unsigned short prio) {
     opts->rta_len = RTA_LENGTH(0);
 
       // Add flowid to link this filter to a specific class
-    unsigned int flowid = 0x10001; // Example flowid
+    // unsigned int flowid = 0x10001; // Example flowid
     opts->rta_len += RTA_ALIGN(
         add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_BASIC_CLASSID, sizeof(flowid), &flowid)
     );
