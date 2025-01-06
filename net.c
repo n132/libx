@@ -348,7 +348,7 @@ struct tf_msg *qfqFilterAdd(unsigned short prio) {
     return m;
 }
 
-struct tf_msg * fwFilterAdd(int prio,  unsigned int flowid, int fwmark){
+struct tf_msg * fwFilterAdd(int prio,  unsigned int flowid){
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
     init_tf_msg(m); // Initialize the tf_msg structure
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
