@@ -319,7 +319,7 @@ struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
 }
 
 
-struct tf_msg *qfqFilterAdd(unsigned short prio, unsigned int flowid) {
+struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsigned int flowid) {
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
     init_tf_msg(m); // Initialize the tf_msg structure
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
@@ -330,7 +330,7 @@ struct tf_msg *qfqFilterAdd(unsigned short prio, unsigned int flowid) {
 
     // Add filter kind (e.g., rsvp)
     m->nlh.nlmsg_len += NLMSG_ALIGN(
-        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("basic") + 1, "basic")
+        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(classifier_name) + 1, classifier_name)
     );
 
     // Add TCA_OPTIONS for filter rules
