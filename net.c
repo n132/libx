@@ -130,22 +130,24 @@ unsigned short add_rtattr (struct rtattr *rta, unsigned short type, unsigned sho
     memcpy(RTA_DATA(rta), data, len);
     return rta->rta_len;
 }
-
-struct tf_msg * hfscQdiscAdd(short defcls) {
+struct tf_msg * hfscQdiscAddImp(u32 handle,u32 parent,short defcls) {
     // Kernel Handler: function hfsc_init_qdisc
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     // -> Calling tc_modify_qdisc 
     init_tf_msg(m);
     m->nlh.nlmsg_type    = RTM_NEWQDISC;     
     m->nlh.nlmsg_flags   |= NLM_F_CREATE;
-    m->tcm.tcm_handle    = 1 << 16;
-    m->tcm.tcm_parent    = -1;
+    m->tcm.tcm_handle    = handle;
+    m->tcm.tcm_parent    = parent;
     
     // Set TCA_KIND     
     m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("hfsc") + 1, "hfsc"));
     // Set TCA_OPTIONS for default class (https://elixir.bootlin.com/linux/v6.1.36/source/net/sched/sch_hfsc.c#L170)
     m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_OPTIONS, sizeof(defcls), &defcls));
     return m;
+}
+struct tf_msg * hfscQdiscAdd(short defcls) {
+    return hfscQdiscAddImp(1<<16,-1,defcls);
 }
 struct tf_msg *qdiscDel(u32 handle) {
     // Allocate and initialize the message
@@ -154,10 +156,12 @@ struct tf_msg *qdiscDel(u32 handle) {
 
     // Set message type and flags for deleting a qdisc
     m->nlh.nlmsg_type    = RTM_DELQDISC;     
-    m->nlh.nlmsg_flags   = 0; // No NLM_F_CREATE for deletion
+    // m->nlh.nlmsg_flags   |; // No NLM_F_CREATE for deletion
     m->tcm.tcm_handle    = handle; // Handle identifier
     m->tcm.tcm_parent    = -1;      // Root qdisc
-
+    // Set TCA_KIND     
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("hfsc") + 1, "hfsc"));
+    // Set TCA_OPTIONS for default class (https://elixir.bootlin.com/linux/v6.1.36/source/net/sched/sch_hfsc.c#L170)
     // Adjust the message length if needed, but no TCA_KIND for deletion
     return m;
 }
@@ -208,7 +212,25 @@ struct tf_msg * hfscClassDel(u32 classid){
     m->tcm.tcm_handle        = classid;
     return m;
 }
+// struct tf_msg *classifierDestroy(const char *classifier_name, unsigned short prio, unsigned int parent, int ifindex) {
+//     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+//     init_tf_msg(m);
+//     m->nlh.nlmsg_type |= RTM_DELTFILTER; // Delete filter/classifier request
+//     m->nlh.nlmsg_len   = NLMSG_LENGTH(sizeof(struct tcmsg));
 
+//     // Initialize Traffic Control message
+//     m->tcm.tcm_parent = parent;         // Parent class/qdisc
+//     m->tcm.tcm_info = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
+
+//     // Add filter kind (optional for classifier)
+//     if (classifier_name) {
+//         m->nlh.nlmsg_len += NLMSG_ALIGN(
+//             add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(classifier_name) + 1, classifier_name)
+//         );
+//     }
+
+//     return m;
+// }
 
 
 struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size, int overhead){
@@ -405,3 +427,4 @@ struct tf_msg * netemQdiscAdd(const char *name,u32 handle, u32 parent, u32 usec)
     m->nlh.nlmsg_len += NLMSG_ALIGN(add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_OPTIONS, sizeof(qopt_attr), &qopt_attr));
     return m;
 }
+
