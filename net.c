@@ -204,7 +204,7 @@ struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parent
 }
 
 
-struct tf_msg * hfscClassDel(u32 classid){
+struct tf_msg * classDel(u32 classid){
     // Kernel Handler: function  hfsc_delete_class
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     init_tf_msg(m);

@@ -726,6 +726,11 @@ int keyDel(int keyid){
 int keyEdit(int keyid, char *payload, size_t plen){
     return syscall(__NR_keyctl, KEYCTL_UPDATE, keyid, payload, plen);
 }
+
+int keyRead(int keyid, char *buffer, size_t buflen)
+{
+    return syscall(__NR_keyctl, KEYCTL_READ, keyid, buffer, buflen);
+}
 // 
 void pinCPU(int id){
     cpu_set_t my_set;

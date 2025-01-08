@@ -13,7 +13,17 @@
 #include <stdlib.h>
 #include <errno.h>
 
+
 #define err_exit(s) do { perror(s); exit(EXIT_FAILURE); } while(0)
+#define FAIL_IF(x) if ((x)) { \
+    printf("\033[0;31m"); \
+    perror(#x); \
+    printf("\033[0m\n"); \
+    return -1; \
+}
+
+
+
 typedef __u32 u32;
 typedef struct tf_msg {
     struct nlmsghdr nlh;

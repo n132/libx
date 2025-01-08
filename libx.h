@@ -37,9 +37,6 @@
 #include <linux/pkt_sched.h>
 #include <linux/rtnetlink.h>
 #include <net/if.h>
-
-
-
 // Definations
 #define MSG_COPY                    040000  /* copy (not remove) all queue messages */
 #define TTYMAGIC                    0x5401
@@ -90,7 +87,12 @@ typedef struct
     size_t nr;
 }ipc_req_t;
 
-
+#define FAIL_IF(x) if ((x)) { \
+    printf("\033[0;31m"); \
+    perror(#x); \
+    printf("\033[0m\n"); \
+    return -1; \
+}
 
 // Externel funcs
 extern size_t           leakKASLR();
