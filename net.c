@@ -50,18 +50,12 @@ void NLMsgSend (int sock, struct tf_msg *m) {
         struct nlmsghdr nh;
         struct nlmsgerr ne;
     } ack;
-    if (write(sock, m, m->nlh.nlmsg_len) == -1)
-        err_exit("[-] NLMsgSend: failed to send");
-    if (read(sock , &ack, sizeof(ack)) == -1)
-        err_exit("[-] NLMsgSend: failed to read");
-    if (ack.ne.error) {
-        errno = -ack.ne.error;
-        perror("[-] NLMsgSend: internal error");
-    }
+    FAIL_IF(write(sock, m, m->nlh.nlmsg_len) == -1);
+    FAIL_IF(read(sock , &ack, sizeof(ack)) == -1);
+    FAIL_IF(ack.ne.error);
 }
 void NLMsgSend_noerr (int sock, struct tf_msg *m) {
-    if (write(sock, m, m->nlh.nlmsg_len) == -1)
-        err_exit("[-] NLMsgSend_noerr: write");
+    FAIL_IF((sock, m, m->nlh.nlmsg_len) == -1);
 }
 
 
@@ -83,8 +77,7 @@ int initNL(){
     };
     // The code is doing `if lo up` and returns the nl_sock_fd
     int nl_sock_fd = socket(PF_NETLINK, SOCK_RAW, NETLINK_ROUTE);
-    if (nl_sock_fd == -1)
-        err_exit("[-] nl socket");
+    FAIL_IF(nl_sock_fd < 0);
     if_up_msg.ifi.ifi_index = if_nametoindex("lo");
     NLMsgSend(nl_sock_fd, &if_up_msg);
     return nl_sock_fd;
@@ -96,12 +89,9 @@ int initNL(){
 void loopbackSend (void) {
     struct sockaddr iaddr = { AF_INET };
     int inet_sock_fd = socket(PF_INET, SOCK_DGRAM, 0);
-    if (inet_sock_fd == -1)
-        err_exit("[-] loopbackSend: inet socket");
-    if (connect(inet_sock_fd, &iaddr, sizeof(iaddr)) == -1)
-        err_exit("[-] loopbackSend: connect");
-    if (write(inet_sock_fd, "", 1) == -1)
-        err_exit("[-] loopbackSend: inet write");
+    FAIL_IF(inet_sock_fd < 0 );
+    FAIL_IF(connect(inet_sock_fd, &iaddr, sizeof(iaddr)) < 0 );
+    FAIL_IF(write(inet_sock_fd, "", 1) < 0);
     close(inet_sock_fd);
 }
 
@@ -177,6 +167,7 @@ struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parent
     /*
         parentid = 0 means q.root
     */
+    FAIL_IF(type!=HFSC_RSC && type !=HFSC_FSC);
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     init_tf_msg(m);
     m->nlh.nlmsg_type       = RTM_NEWTCLASS;
@@ -195,10 +186,7 @@ struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parent
         opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_HFSC_RSC, sizeof(dist), dist));
     else if(type == HFSC_FSC)
         opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_HFSC_FSC, sizeof(dist), dist));
-    else{
-        err_exit("[-] hfscClassAdd: not support");
-        return -1;
-    }
+
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
     return m;
 }
@@ -316,6 +304,7 @@ struct tf_msg * qfqQdiscAddDef() {
 
 
 struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
+    FAIL_IF(type!=TCA_QFQ_LMAX && type!=TCA_QFQ_WEIGHT);
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     init_tf_msg(m);
     m->nlh.nlmsg_type       = RTM_NEWTCLASS;
@@ -332,10 +321,6 @@ struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
         opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_QFQ_LMAX, sizeof(val), &val));
     else if(type == TCA_QFQ_WEIGHT)
         opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_QFQ_WEIGHT, sizeof(val), &val));
-    else{
-        err_exit("[-] qfqClassAdd: not support");
-        return -1;
-    }
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
     return m;
 }

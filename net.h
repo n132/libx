@@ -14,7 +14,6 @@
 #include <errno.h>
 
 
-#define err_exit(s) do { perror(s); exit(EXIT_FAILURE); } while(0)
 #define FAIL_IF(x) if ((x)) { \
     printf("\033[0;31m"); \
     perror(#x); \
