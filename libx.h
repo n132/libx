@@ -78,6 +78,8 @@ typedef struct msgQueueMsg{
 enum PG_VEC_CMD {
     ADD,
     FREE,
+    EDIT,
+    MAP,
     EXIT
 };
 typedef struct
