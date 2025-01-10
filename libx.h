@@ -52,6 +52,7 @@
 #define INITIAL_PG_VEC_SPRAY        0x200
 #define KASLR                       0xffffffff81000000ull //nokaslr value for debugging
 #define MAGIC                       0xFFFFFFFFDEADBEEFull
+#define ELIBX 0x132
 
 typedef __SIZE_TYPE__ 	size_t;
 typedef unsigned char       u8;
@@ -92,6 +93,14 @@ typedef struct
     perror(#x); \
     printf("\033[0m\n"); \
     return -1; \
+}
+
+#define FAIL(x, msg) if ((x)) { \
+    printf("\033[0;31m"); \
+    printf("%s\n",msg); \
+    perror(#x); \
+    printf("\033[0m\n"); \
+    exit(-ELIBX); \
 }
 
 // Externel funcs

