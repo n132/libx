@@ -597,11 +597,9 @@ void _spray_comm_handler()
             FAIL( (req.order) > 4, "Fix libx to add this feature!");
             FAIL( pgv[req.idx].fd <= 0 || pgv[req.idx].size < fram_size || pgv[req.idx].mapped == 0 ,"[-] PGV not allocated" );
             size_t target_size = pgv[req.idx].size;
-            info(hex(fram_size));
-            info(hex(target_size));
             u64 offset = 0;
             for(offset = 0 ; offset < target_size - fram_size ; offset += fram_size)
-                FAIL_IF( fram_size != memcpy(pgv[req.idx].mapped + offset, PGV_SHARE_AREA, fram_size ));
+                memcpy(pgv[req.idx].mapped + offset, PGV_SHARE_AREA, fram_size);
             
         }
         result = req.idx;
