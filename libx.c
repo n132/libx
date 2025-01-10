@@ -576,7 +576,7 @@ void _spray_comm_handler()
     // }ipc_req_t;
     do {
         read(pg_vec_child[0], &req, sizeof(req));
-        FAIL_IF(req.idx < INITIAL_PG_VEC_SPRAY);
+        FAIL_IF(req.idx >= INITIAL_PG_VEC_SPRAY);
         if (req.cmd == ADD)
         {
             pgv[req.idx].fd = _pvg_sock(PAGE_SIZE * (1<<req.order), req.nr);
@@ -626,9 +626,7 @@ void pgvCmd(enum PG_VEC_CMD cmd, int idx, size_t order, size_t nr)
 void pgvInit(){
     pipe(pg_vec_child);
     pipe(pg_vec_parent);
-    u64 debug = mmap(PGV_SHARE_AREA, PAGE_SIZE * (1<<4) , PROT_READ | PROT_WRITE, MAP_SHARED, -1, 0);
-    info(hex(debug));
-    FAIL_IF( debug!= PGV_SHARE_AREA);
+    FAIL_IF( mmap(PGV_SHARE_AREA, PAGE_SIZE * (1<<4) , PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0) != PGV_SHARE_AREA);
     if (!fork())
     {
         // unshare -r 
