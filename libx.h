@@ -78,6 +78,7 @@ typedef struct msgQueueMsg{
 enum PG_VEC_CMD {
     ADD,
     FREE,
+    SHOW,
     EDIT,
     MAP,
     EXIT
@@ -87,8 +88,15 @@ typedef struct
     enum PG_VEC_CMD cmd;
     int32_t idx;
     size_t order;
-    size_t nr;
+    union arg
+    {
+        size_t nr;
+        size_t offset; // show
+    }arg;
+    
+    
 }ipc_req_t;
+#define PGV_SHARE_AREA 0x13200000
 
 #define FAIL_IF(x) if ((x)) { \
     printf("\033[0;31m"); \

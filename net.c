@@ -94,6 +94,15 @@ void loopbackSend (void) {
     FAIL_IF(write(inet_sock_fd, "", 1) < 0);
     close(inet_sock_fd);
 }
+void markedLoopbackSend (u32 mark) {
+    struct sockaddr iaddr = { AF_INET };
+    int inet_sock_fd = socket(PF_INET, SOCK_DGRAM, 0);
+    FAIL_IF(inet_sock_fd < 0 );
+    FAIL_IF(setsockopt(inet_sock_fd, SOL_SOCKET, SO_MARK, &mark, sizeof(mark))< 0 );
+    FAIL_IF(connect(inet_sock_fd, &iaddr, sizeof(iaddr)) < 0 );
+    FAIL_IF(write(inet_sock_fd, "", 1) < 0);
+    close(inet_sock_fd);
+}
 
 /* Trafic control for netlink */
 void init_tf_msg (struct tf_msg *m) {

