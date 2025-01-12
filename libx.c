@@ -8,7 +8,7 @@ int optmem_max;
 int urand_fd=-1;
 int pg_vec_child[2],pg_vec_parent[2];
 
-int sk_fd[0x20][2];
+int sk_fd[SOCKET_NUM][2];
 int pipe_fd[PIPE_NUM*4][2];
 
 size_t fread_u64(const char *fname)
@@ -586,7 +586,7 @@ void _spray_comm_handler()
         else if(req.cmd == MAP){
             FAIL(pgv[req.idx].fd <= 0,"[-] PGV not allocated");
             void *mapped = mmap(NULL, pgv[req.idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[req.idx].fd, 0);
-            FAIL(mapped < 0,"[-] FAILED to MAP PGV");
+            FAIL((long long )mapped < 0,"[-] FAILED to MAP PGV");
             pgv[req.idx].mapped = mapped;
         }else if(req.cmd == EDIT){
             FAIL( (req.order) > 4, "Fix libx to add this feature!");
@@ -605,6 +605,8 @@ void _spray_comm_handler()
             FAIL( offset >= target_size, "[-] OOB Read");
             FAIL( offset+fram_size >= target_size, "[-] OOB Read");
             FAIL( offset+fram_size < offset, "[-] OOB Read");
+            info(hex((PGV_SHARE_AREA,pgv[req.idx].mapped)));
+            printf("%p %p %p\n",PGV_SHARE_AREA,pgv[req.idx].mapped + offset,fram_size);
             memcpy(PGV_SHARE_AREA, pgv[req.idx].mapped + offset, fram_size);
         }
         result = req.idx;

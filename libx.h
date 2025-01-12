@@ -42,7 +42,7 @@
 #define TTYMAGIC                    0x5401
 #define PIPE_NUM                    256
 #define PAGE_SIZE                   0x1000
-#define SOCKET_NUM                  0x20
+#define SOCKET_NUM                  0x200
 #define unlikely(x)                 __builtin_expect(!!(x), 0)
 #define SK_BUFF_NUM                 0x40
 #define MSGMNB_FILE                 "/proc/sys/kernel/msgmnb"
@@ -117,7 +117,7 @@ typedef struct
 extern size_t           leakKASLR();
 extern size_t           leakPHYS();
 extern void *           initFuse(void);
-extern int              sk_fd[0x20][2];
+extern int              sk_fd[SOCKET_NUM][2];
 extern int              pipe_fd[PIPE_NUM*4][2];
 extern size_t           user_cs, user_ss, user_rflags, user_sp;
 
