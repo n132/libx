@@ -557,7 +557,6 @@ int _pvg_sock(uint32_t size, uint32_t n)
     req.tp_block_nr = n;
     req.tp_frame_size = PAGE_SIZE;
     req.tp_frame_nr = (req.tp_block_size * req.tp_block_nr) / req.tp_frame_size;
-    
     if (setsockopt(socketfd, SOL_PACKET, PACKET_TX_RING, &req, sizeof(req)) < 0)
     {
         perror("setsockopt PACKET_TX_RING failed");
@@ -581,7 +580,8 @@ void _spray_comm_handler()
         }
         else if (req.cmd == FREE)
         {
-            close(pgv[req.idx].fd);   
+            close(pgv[req.idx].fd);  
+            memset(&pgv[req.idx],0,sizeof(pgvFrame));
         }
         else if(req.cmd == MAP){
             FAIL(pgv[req.idx].fd <= 0,"[-] PGV not allocated");
@@ -605,8 +605,6 @@ void _spray_comm_handler()
             FAIL( offset >= target_size, "[-] OOB Read");
             FAIL( offset+fram_size >= target_size, "[-] OOB Read");
             FAIL( offset+fram_size < offset, "[-] OOB Read");
-            info(hex((PGV_SHARE_AREA,pgv[req.idx].mapped)));
-            printf("%p %p %p\n",PGV_SHARE_AREA,pgv[req.idx].mapped + offset,fram_size);
             memcpy(PGV_SHARE_AREA, pgv[req.idx].mapped + offset, fram_size);
         }
         result = req.idx;
@@ -614,12 +612,22 @@ void _spray_comm_handler()
     } while(req.cmd != EXIT);
 
 }
-
+void pgvAdd(int idx, size_t order, size_t nr){
+    
+}
+void pgvDel(int idx){
+    
+}
+void pgvShow(int idx, size_t order, size_t nr){
+    
+}
+void pgvEdit(int idx, size_t order, size_t nr){
+    
+}
 void pgvCmd(enum PG_VEC_CMD cmd, int idx, size_t order, size_t nr)
 {
     ipc_req_t req;
     int32_t result;
-
     req.cmd = cmd;
     req.idx = idx;
     req.order = order;
@@ -643,6 +651,14 @@ void pgvInit(){
         exit(1);
     }
 }
+
+// int pgvList[0x200];
+// void pgvInit(){
+//     // Main Thread PGV
+//     FAIL(getuid()!=0,"not in the sandbox");
+//     sandbox();
+
+// }
 /*
     This function clone a process with little noise and 
     keeps checking if the cred is modified to root. If it's changed to root,
