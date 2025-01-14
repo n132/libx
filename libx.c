@@ -646,32 +646,32 @@ void pgvInitL(){
     FAIL(getuid()!=0,"not in the sandbox");
 }
 void pgvAdd(size_t idx, size_t order, size_t nr){
-    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     pgvL[idx].fd = _pvg_sock(PAGE_SIZE * (1<<order), nr);
     FAIL(pgvL[idx].fd <= 0,"[-] PGV not allocated");
     pgvL[idx].size = PAGE_SIZE * (1<<order) * nr ;
 }
 void pgvDel(size_t idx){
-    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     close(pgv[idx].fd);  
     memset(&pgv[idx],0,sizeof(pgvFrame));
 }
 void pgvMap(int idx){
-    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     FAIL(pgv[idx].fd <= 0,"[-] PGV not allocated");
     void *mapped = mmap(NULL, pgv[idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[idx].fd, 0);
     FAIL((long long )mapped < 0,"[-] FAILED to MAP PGV");
     pgv[idx].mapped = mapped;
 }
 void * pgvShow(int idx, size_t offset, size_t size){
-    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     FAIL( pgv[idx].fd <= 0 || pgv[idx].size <= offset || pgv[idx].size <= offset+size || offset+size<=offset || pgv[idx].mapped == 0 ,"[-] PGV not allocated" );
     char * buffer = calloc(1,size);
     FAIL_IF(buffer<=0);
     memcpy(buffer, pgv[idx].mapped + offset, size);
 }
 void pgvEdit(int idx, size_t offset, size_t size, char * buffer){
-    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     FAIL( pgv[idx].fd <= 0 || pgv[idx].size <= offset || pgv[idx].size <= offset+size || offset+size<=offset || pgv[idx].mapped == 0 ,"[-] PGV not allocated" );
     memcpy(pgv[idx].mapped + offset,buffer,size);
 }
