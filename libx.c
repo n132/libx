@@ -656,13 +656,14 @@ void pgvDel(size_t idx){
     close(pgv[idx].fd);  
     memset(&pgv[idx],0,sizeof(pgvFrame));
 }
+void pgvMap(int idx, size_t order, size_t nr){
+    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+}
 void pgvShow(int idx, size_t order, size_t nr){
     FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
-
 }
 void pgvEdit(int idx, size_t order, size_t nr){
     FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
-
 }
 
 /*
