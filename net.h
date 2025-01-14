@@ -43,11 +43,6 @@ struct if_msg {
     struct ifinfomsg ifi;
 };
 
-enum hfsc_class_flags {
-	HFSC_RSC = 0x1,
-	HFSC_FSC = 0x2,
-	HFSC_USC = 0x4
-};
 
 typedef unsigned char       u8;
 typedef unsigned short      u16;

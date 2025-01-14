@@ -166,7 +166,7 @@ struct tf_msg *qdiscDel(u32 handle) {
 }
 
 
-struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parentid){
+struct tf_msg * hfscClassAdd(int type, u32 classid, u32 parentid){
     // Kernel Handler: function  hfsc_change_class
     /*
         hfsc_changeclass:
@@ -176,7 +176,7 @@ struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parent
     /*
         parentid = 0 means q.root
     */
-    FAIL_IF(type!=HFSC_RSC && type !=HFSC_FSC);
+    FAIL_IF(type!=TCA_HFSC_RSC && type !=TCA_HFSC_FSC);
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     init_tf_msg(m);
     m->nlh.nlmsg_type       = RTM_NEWTCLASS;
@@ -191,9 +191,9 @@ struct tf_msg * hfscClassAdd(enum hfsc_class_flags type, u32 classid, u32 parent
     // Default trafic control policy
     // TODO: Get from parameters
     int dist[3] = {1, 1, 1}; 
-    if(type == HFSC_RSC)
+    if(type == TCA_HFSC_RSC)
         opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_HFSC_RSC, sizeof(dist), dist));
-    else if(type == HFSC_FSC)
+    else if(type == TCA_HFSC_FSC)
         opts->rta_len += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, TCA_HFSC_FSC, sizeof(dist), dist));
 
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
@@ -312,7 +312,7 @@ struct tf_msg * qfqQdiscAddDef() {
 }
 
 
-struct tf_msg * qfqClassAdd(enum hfsc_class_flags type, u32 classid,u32 val){
+struct tf_msg * qfqClassAdd(int type, u32 classid,u32 val){
     FAIL_IF(type!=TCA_QFQ_LMAX && type!=TCA_QFQ_WEIGHT);
     struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
     init_tf_msg(m);
