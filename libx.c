@@ -612,18 +612,7 @@ void _spray_comm_handler()
     } while(req.cmd != EXIT);
 
 }
-void pgvAdd(int idx, size_t order, size_t nr){
-    
-}
-void pgvDel(int idx){
-    
-}
-void pgvShow(int idx, size_t order, size_t nr){
-    
-}
-void pgvEdit(int idx, size_t order, size_t nr){
-    
-}
+
 void pgvCmd(enum PG_VEC_CMD cmd, int idx, size_t order, size_t nr)
 {
     ipc_req_t req;
@@ -651,14 +640,24 @@ void pgvInit(){
         exit(1);
     }
 }
+// Local PGV 
+int pgvL[0x200] = {};
+void pgvInitL(){
+    FAIL(getuid()!=0,"not in the sandbox");
+}
+void pgvAdd(int idx, size_t order, size_t nr){
+    
+}
+void pgvDel(int idx){
+    
+}
+void pgvShow(int idx, size_t order, size_t nr){
+    
+}
+void pgvEdit(int idx, size_t order, size_t nr){
+    
+}
 
-// int pgvList[0x200];
-// void pgvInit(){
-//     // Main Thread PGV
-//     FAIL(getuid()!=0,"not in the sandbox");
-//     sandbox();
-
-// }
 /*
     This function clone a process with little noise and 
     keeps checking if the cred is modified to root. If it's changed to root,
