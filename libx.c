@@ -529,40 +529,26 @@ typedef struct pgv_frame{
 
 pgvFrame pgv[INITIAL_PG_VEC_SPRAY] = {};
 
-int _pvg_sock(uint32_t size, uint32_t n)
+u64 _pvg_sock(u64 size, u64 n)
 {
     struct tpacket_req req;
-    int32_t socketfd, version;
-
+    u32 socketfd, version;
     socketfd = socket(AF_PACKET, SOCK_RAW, PF_PACKET);
-    if (socketfd < 0)
-    {
-        perror("bad socket");
-        exit(-1);
-    }
+    FAIL_IF(socketfd<0);
 
     version = TPACKET_V1;
 
-    if (setsockopt(socketfd, SOL_PACKET, PACKET_VERSION, &version, sizeof(version)) < 0)
-    {
-        perror("setsockopt PACKET_VERSION failed");
-        exit(-1);
-    }
+    FAIL_IF(setsockopt(socketfd, SOL_PACKET, PACKET_VERSION, &version, sizeof(version)) < 0);
+
 
     assert(size % 4096 == 0);
 
     memset(&req, 0, sizeof(req));
-
     req.tp_block_size = size;
     req.tp_block_nr = n;
     req.tp_frame_size = PAGE_SIZE;
     req.tp_frame_nr = (req.tp_block_size * req.tp_block_nr) / req.tp_frame_size;
-    if (setsockopt(socketfd, SOL_PACKET, PACKET_TX_RING, &req, sizeof(req)) < 0)
-    {
-        perror("setsockopt PACKET_TX_RING failed");
-        exit(-1);
-    }
-
+    FAIL_IF(setsockopt(socketfd, SOL_PACKET, PACKET_TX_RING, &req, sizeof(req)) < 0);
     return socketfd;
 }
 void _spray_comm_handler()
@@ -653,27 +639,27 @@ void pgvAdd(size_t idx, size_t order, size_t nr){
 }
 void pgvDel(size_t idx){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
-    close(pgv[idx].fd);  
-    memset(&pgv[idx],0,sizeof(pgvFrame));
+    FAIL(close(pgvL[idx].fd)!=0,hex(pgvL[idx].fd));  
+    memset(&pgvL[idx],0,sizeof(pgvFrame));
 }
 void pgvMap(int idx){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
-    FAIL(pgv[idx].fd <= 0,"[-] PGV not allocated");
-    void *mapped = mmap(NULL, pgv[idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[idx].fd, 0);
+    FAIL(pgvL[idx].fd <= 0,"[-] PGV not allocated");
+    void *mapped = mmap(NULL, pgvL[idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgvL[idx].fd, 0);
     FAIL((long long )mapped < 0,"[-] FAILED to MAP PGV");
-    pgv[idx].mapped = mapped;
+    pgvL[idx].mapped = mapped;
 }
 void * pgvShow(int idx, size_t offset, size_t size){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
-    FAIL( pgv[idx].fd <= 0 || pgv[idx].size <= offset || pgv[idx].size <= offset+size || offset+size<=offset || pgv[idx].mapped == 0 ,"[-] PGV not allocated" );
+    FAIL( pgvL[idx].fd <= 0 || pgvL[idx].size <= offset || pgvL[idx].size <= offset+size || offset+size<=offset || pgvL[idx].mapped == 0 ,"[-] PGV not allocated" );
     char * buffer = calloc(1,size);
     FAIL_IF(buffer<=0);
-    memcpy(buffer, pgv[idx].mapped + offset, size);
+    memcpy(buffer, pgvL[idx].mapped + offset, size);
 }
 void pgvEdit(int idx, size_t offset, size_t size, char * buffer){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
-    FAIL( pgv[idx].fd <= 0 || pgv[idx].size <= offset || pgv[idx].size <= offset+size || offset+size<=offset || pgv[idx].mapped == 0 ,"[-] PGV not allocated" );
-    memcpy(pgv[idx].mapped + offset,buffer,size);
+    FAIL( pgvL[idx].fd <= 0 || pgvL[idx].size <= offset || pgvL[idx].size <= offset+size || offset+size<=offset || pgvL[idx].mapped == 0 ,"[-] PGV not allocated" );
+    memcpy(pgvL[idx].mapped + offset,buffer,size);
 }
 
 /*
