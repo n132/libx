@@ -641,21 +641,28 @@ void pgvInit(){
     }
 }
 // Local PGV 
-int pgvL[0x200] = {};
+pgvFrame pgvL[0x200] = {};
 void pgvInitL(){
     FAIL(getuid()!=0,"not in the sandbox");
 }
-void pgvAdd(int idx, size_t order, size_t nr){
-    
+void pgvAdd(size_t idx, size_t order, size_t nr){
+    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    pgvL[idx].fd = _pvg_sock(PAGE_SIZE * (1<<order), nr);
+    FAIL(pgvL[idx].fd <= 0,"[-] PGV not allocated");
+    pgvL[idx].size = PAGE_SIZE * (1<<order) * nr ;
 }
-void pgvDel(int idx){
-    
+void pgvDel(size_t idx){
+    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+    close(pgv[idx].fd);  
+    memset(&pgv[idx],0,sizeof(pgvFrame));
 }
 void pgvShow(int idx, size_t order, size_t nr){
-    
+    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+
 }
 void pgvEdit(int idx, size_t order, size_t nr){
-    
+    FAIL(idx>=sizeof(pgvL)/sizeo(pgvL[0]), "Index OOB");
+
 }
 
 /*
