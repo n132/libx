@@ -8,7 +8,7 @@ all: libx.c libx.h kaslr.c fuse.c
 test: main.c
 	gcc -masm=intel ./main.c -o ./main --static -L . -lx -w -fPIE && ./main
 clean:
-	rm -rf ./libx.o ./libx.so ./libx.a
+	rm -rf ./libx.o ./libx.so ./libx.a ./net.o ./kaslr.o ./fuse.o
 install: libx.so
 	cp ./libx.so /lib/x86_64-linux-gnu/
 	cp ./libx.a /lib/x86_64-linux-gnu/

