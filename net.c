@@ -1,4 +1,6 @@
 #include "net.h"
+#define SIZE_SZ (sizeof(size_t))
+#define chunksize(p) (*((size_t *)((char *)(p) - SIZE_SZ)) & ~0x7)
 
 /*
     lo interface up
@@ -398,8 +400,64 @@ struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsig
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
     return m;
 }
+// Create a u32 filter
+// The selector is required while adding a new filter
+struct tf_msg *u32FilterAdd(unsigned short prio, unsigned int flowid, struct tc_u32_sel *selector) {
+    /*
+    Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
+    */
+    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+    init_tf_msg(m); // Initialize the tf_msg structure
+    m->nlh.nlmsg_type   = RTM_NEWTFILTER;
+    m->nlh.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
+    m->tcm.tcm_info     = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
+    
+    m->tcm.tcm_handle   = flowid;
+    m->tcm.tcm_parent   = 0;
 
+    // Add filter kind (e.g., rsvp)
+    m->nlh.nlmsg_len += NLMSG_ALIGN(
+        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("u32") + 1, "u32")
+    );
 
+    // Add TCA_OPTIONS for filter rules
+    struct rtattr *opts = (struct rtattr *)((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
+    opts->rta_type = TCA_OPTIONS;
+    opts->rta_len = RTA_LENGTH(0);
+
+    // Add flowid to link this filter to a specific class
+    // unsigned int flowid = 0x10001; // Example flowid
+    // u32 TCA_X_CLASSID = 3;
+    // opts->rta_len += RTA_ALIGN(
+    //     add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_X_CLASSID, sizeof(flowid), &flowid)
+    // );
+
+    // m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+
+    // **Add u32 selector (TCA_U32_SEL)** if provided
+    if (selector != NULL) {
+        opts->rta_len += RTA_ALIGN(
+            add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_U32_SEL, 
+            sizeof(struct tc_u32_sel) + selector->nkeys * sizeof(struct tc_u32_key), selector)
+        );
+    }else{
+        panic("[-] creating u32 requires selector");
+    }
+    // Finalize the message length
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+    return m;
+}
+struct tf_msg * attrAdd(struct tf_msg * m, size_t attr_type , u64 size, char *data ){
+    // Expand the space
+    m = realloc(m, chunksize(m) + size);
+    
+    struct rtattr *opts     = (char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len);
+    opts->rta_type          = TCA_OPTIONS;
+    opts->rta_len           = NLA_HDRLEN;
+    opts->rta_len           += RTA_ALIGN(add_rtattr((char *)opts + opts->rta_len, attr_type, size, data));
+    m->nlh.nlmsg_len        += NLMSG_ALIGN(opts->rta_len);
+    return m;
+}
 struct tf_msg * netemQdiscAdd(const char *name,u32 handle, u32 parent, u32 usec) {
     // Learned from KCTF cve-2023-31436 write up
     // Kernel Handler: function hfsc_init_qdisc
