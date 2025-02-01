@@ -48,3 +48,9 @@ typedef unsigned char       u8;
 typedef unsigned short      u16;
 typedef unsigned int        u32;
 typedef unsigned long long  u64;
+
+struct schedAttr {
+    size_t type;
+    size_t size;
+    unsigned char * ctx;
+};
