@@ -211,25 +211,7 @@ struct tf_msg * classDel(u32 classid){
     m->tcm.tcm_handle        = classid;
     return m;
 }
-// struct tf_msg *classifierDestroy(const char *classifier_name, unsigned short prio, unsigned int parent, int ifindex) {
-//     struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
-//     init_tf_msg(m);
-//     m->nlh.nlmsg_type |= RTM_DELTFILTER; // Delete filter/classifier request
-//     m->nlh.nlmsg_len   = NLMSG_LENGTH(sizeof(struct tcmsg));
 
-//     // Initialize Traffic Control message
-//     m->tcm.tcm_parent = parent;         // Parent class/qdisc
-//     m->tcm.tcm_info = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
-
-//     // Add filter kind (optional for classifier)
-//     if (classifier_name) {
-//         m->nlh.nlmsg_len += NLMSG_ALIGN(
-//             add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(classifier_name) + 1, classifier_name)
-//         );
-//     }
-
-//     return m;
-// }
 
 
 struct tf_msg * concatQdiscStab(struct tf_msg * m, char *data , u64 size, int overhead){
@@ -361,57 +343,18 @@ struct tf_msg *filterEdit(const char *classifier_name, unsigned short prio, unsi
 
     return m;
 }
-struct tf_msg *filterAdd(const char *classifier_name, unsigned short prio, unsigned int flowid) {
-    /*
-    Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
-    */
-    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
-    init_tf_msg(m); // Initialize the tf_msg structure
-    m->nlh.nlmsg_type   = RTM_NEWTFILTER;
-    m->nlh.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
-    m->tcm.tcm_info     = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
-    
-    m->tcm.tcm_handle   = flowid;
-    m->tcm.tcm_parent   = 0;
-
-    // Add filter kind (e.g., rsvp)
-    m->nlh.nlmsg_len += NLMSG_ALIGN(
-        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(classifier_name) + 1, classifier_name)
-    );
-
-    // Add TCA_OPTIONS for filter rules
-    struct rtattr *opts = (struct rtattr *)((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
-    opts->rta_type = TCA_OPTIONS;
-    opts->rta_len = RTA_LENGTH(0);
-
-    // Add flowid to link this filter to a specific class
-    // unsigned int flowid = 0x10001; // Example flowid
-    u32 TCA_X_CLASSID = 1;
-    // Normally it's 1 but bfp's TCA_BPF_CLASSID==3
-    if(strcmp(classifier_name,"bfp"))
-        TCA_X_CLASSID = TCA_BASIC_CLASSID; 
-    else
-        TCA_X_CLASSID = 3;
-
-    opts->rta_len += RTA_ALIGN(
-        add_rtattr((char *)opts + RTA_ALIGN(opts->rta_len), TCA_X_CLASSID, sizeof(flowid), &flowid)
-    );
-
-    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
-    return m;
-}
-// Create a u32 filter
 // The selector is required while adding a new filter
 
-struct tf_msg *u32FilterAdd(unsigned short prio, unsigned int flowid, struct schedAttr *attrL[], size_t nr_attr) {
+struct tf_msg *filterAdd(char * name, unsigned short prio, unsigned int flowid, struct schedAttr attrL[], size_t nr_attr) {
     /*
     Selector is required for u32
     Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
     */
-    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+    
+    struct tf_msg *m = calloc(1, sizeof(struct tf_msg)+0x4000);
     init_tf_msg(m); // Initialize the tf_msg structure
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
-    m->nlh.nlmsg_flags |= NLM_F_CREATE | NLM_F_EXCL;
+    m->nlh.nlmsg_flags |= NLM_F_CREATE ;
     m->tcm.tcm_info     = (prio << 16) | htons(ETH_P_IP); // Priority and protocol
     
     m->tcm.tcm_handle   = flowid;
@@ -419,19 +362,18 @@ struct tf_msg *u32FilterAdd(unsigned short prio, unsigned int flowid, struct sch
 
     // Add filter kind (e.g., rsvp)
     m->nlh.nlmsg_len += NLMSG_ALIGN(
-        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("u32") + 1, "u32")
+        add_rtattr((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(name) + 1, name)
     );
 
     if(attrL==0)
         return m;
-
     // Add TCA_OPTIONS for filter rules
     struct rtattr *opts = (struct rtattr *)((char *)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
     opts->rta_type = TCA_OPTIONS;
     opts->rta_len = RTA_LENGTH(0);
 
-    for( int i = 0 ; i <nr_attr ; i++){
-        struct schedAttr * attr = attrL[i];
+    for( int i = 0 ; i < nr_attr ; i++ ){
+        struct schedAttr * attr = &attrL[i];
         if(!attr)
             continue;
         opts->rta_len += RTA_ALIGN(
