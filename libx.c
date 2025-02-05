@@ -187,6 +187,10 @@ void hook_segfault(){
         perror("hook_segfault");
         exit(EXIT_FAILURE);
     }
+    if (sigaction(SIGTRAP, &sa, NULL) == -1) {
+        perror("hook_segfault");
+        exit(EXIT_FAILURE);
+    }
     // info("SegFault Hooked");
 }
 
