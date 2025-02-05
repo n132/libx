@@ -57,7 +57,12 @@ void NLMsgSend (int sock, struct tf_msg *m) {
     FAIL_IF(ack.ne.error);
 }
 void NLMsgSend_noerr (int sock, struct tf_msg *m) {
+    struct {
+        struct nlmsghdr nh;
+        struct nlmsgerr ne;
+    } ack;
     FAIL_IF(write(sock, m, m->nlh.nlmsg_len) == -1);
+    // FAIL_IF(read(sock , &ack, sizeof(ack)) == -1);
 }
 
 
