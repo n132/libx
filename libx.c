@@ -837,15 +837,7 @@ static void __attribute__((constructor)) init(void){
 // }
 
 #define SYS_pidfd_getfd 438
-int pidofn132(){
-	char buf[0x100];
-	// Target process is the process that we want to get a root shell/flag
-	FILE* fp = popen("pidof n132","r");
-	fread(buf,1,0x100,fp);
-	fclose(fp);
-	int pid = strtoull(buf,0,10);
-	return pid;
-}
+
 void coreShell(int reboot){
 	// Use when core_pattern was modified:
 	// /proc/sys/kernel/core_pattern <- "|/proc/%P/fd/666"
