@@ -15,8 +15,7 @@ Install `libx`
 ```bash
 git clone git@github.com:n132/libx.git
 cd libx
-make
-make install # you may need sudo
+make && sudo make install
 ```
 
 
@@ -26,7 +25,10 @@ uninstall `libx`
 make clean
 make uninstall
 ```
-
+# musl (optional)
+```bash
+make musl && sudo make install-musl
+```
 # Example
 
 ```c
