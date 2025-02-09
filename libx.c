@@ -1,5 +1,34 @@
 #include "libx.h"
-
+char * hex(size_t num){
+    char *buf = malloc(0x20);
+    snprintf(buf,0x20,"%p",(void *)num);
+    return buf;
+}
+void success(const char *text){
+    // Green color code
+    printf("\033[0;32m[+] ");
+    printf("%s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+}
+void info(const char *text){
+    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
+}
+void warn(const char* text) {
+    // Yellow color code
+    printf("\033[0;33m");
+    printf("[!] %s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+}
+void panic(const char *text){
+    // Red color code
+    printf("\033[0;31m");
+    printf("[X] %s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+    exit(0x132);
+}
 /*
     Utils 
 */
@@ -38,12 +67,12 @@ size_t msgLimit(){
     }
 }
 
-__u8 * dpn(__u8 * c,size_t n,size_t nn){
+__u8 * dpn(int c,size_t n,size_t nn){
     FAIL(nn<n,"Wrong usage of dpn");
-    __u8* res = malloc(nn+1);
+    char* res = malloc(nn+1);
     memset(res,0,nn);
     memset(res,c,n);
-    res[n] = NULL;
+    res[n] = 0;
     return res;
 }
 
@@ -59,7 +88,7 @@ int findp64(__u8 *stack,size_t value, size_t n){
     size_t * ptr;
     FAIL_IF(n<8);
     for(size_t i =0 ; i <= n-8; i++){
-        ptr = stack+i;
+        ptr = (size_t *)&stack[i];
         if(value == *ptr)
             return i;
     }
@@ -81,42 +110,13 @@ void *mmapx(void *addr, size_t size)
 {
 	return mmap(addr, size, 7 , 0x21, -1, 0);
 }
-__u8 * dp(__u8 * c,size_t n){
+__u8 * dp(int c,size_t n){
     __u8* res = calloc(1,n+1);
     memset(res,c,n);
-    res[n] = NULL;
+    res[n] = 0;
     return res;
 }
-char * hex(size_t num){
-    char *buf = malloc(0x20);
-    snprintf(buf,0x20,"%p",num);
-    return buf;
-}
-void success(const char *text){
-    // Green color code
-    printf("\033[0;32m[+] ");
-    printf("%s", text);
-    // Reset to default color
-    printf("\033[0m\n");
-}
-void info(const char *text){
-    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
-}
-void warn(const char* text) {
-    // Yellow color code
-    printf("\033[0;33m");
-    printf("[!] %s", text);
-    // Reset to default color
-    printf("\033[0m\n");
-}
-void panic(const char *text){
-    // Red color code
-    printf("\033[0;31m");
-    printf("[X] %s", text);
-    // Reset to default color
-    printf("\033[0m\n");
-    exit(0x132);
-}
+
 void shell(){
     FAIL(getuid(),"[!] Failed to Escape");
     system("/bin/sh");
@@ -183,11 +183,11 @@ void hook_segfault(){
     sa.sa_flags = SA_SIGINFO;
     sa.sa_sigaction = _sigsegv_handler;
 
-    if (sigaction(SIGSEGV, &sa, NULL) == -1) {
+    if (sigaction(SIGSEGV, &sa, 0) == -1) {
         perror("hook_segfault");
         exit(EXIT_FAILURE);
     }
-    if (sigaction(SIGTRAP, &sa, NULL) == -1) {
+    if (sigaction(SIGTRAP, &sa, 0) == -1) {
         perror("hook_segfault");
         exit(EXIT_FAILURE);
     }
@@ -208,10 +208,10 @@ void setsuid(char *filename){
     // Attempt to set the suid bit along with the owner's execute permission and read/execute for group and others
     if (chmod(filename, mode) == -1) {
         perror("chmod failed to set suid bit");
-        return 1;
+        return ;
     }
     printf("Successfully set suid bit on %s\n", filename);
-    return 0;
+    return ;
 }
 /*
     Name: Stop the process for debugging
@@ -228,7 +228,7 @@ void debug(){
 void hexdump(void * addr, size_t len){
     printf("HexDump:\n");
     int more = (len%0x10) ? 1:0;
-    for(int i = 0 ; i < (len/0x10)+ more; i++){
+    for(long long unsigned int i = 0 ; i < (len/0x10)+ more; i++){
         printf("0x%016llx:\t0x%016llx\t0x%016llx\n",i*0x10, *(u64 *)(addr+i*0x10), *(u64 *)(addr+i*0x10+8));
     }
 }
@@ -241,7 +241,7 @@ void hexdump(void * addr, size_t len){
 */
 __u8 *p64(size_t val){
     char *res  = calloc(1,0x18);
-    size_t * p = res;
+    size_t * p = (size_t *)res;
     * p = val;
     return res;
 }
@@ -270,7 +270,7 @@ msgMsg* msgRecv(int msgid,size_t size){
     msgMsg* recv = (msgMsg *)calloc(1,sizeof(long)+size+1);
     if (msgrcv(msgid, recv, size, 0, MSG_NOERROR | IPC_NOWAIT)<0) {
         perror("msgrcv");
-        return NULL;
+        return 0;
     }
     return recv;
 }
@@ -278,12 +278,12 @@ msgMsg* msgPeek(int msgid,size_t size){
     msgMsg* recv = (msgMsg *)calloc(1,sizeof(long)+size+1);
     if (msgrcv(msgid, recv, size, 0, MSG_NOERROR | IPC_NOWAIT | MSG_COPY )<0) {
         perror("msgrcv");
-        return NULL;
+        return 0;
     }
     return recv;
 }
 void msgDel(int msgid){
-    if (msgctl(msgid, IPC_RMID, NULL) == -1)
+    if (msgctl(msgid, IPC_RMID, 0) == -1)
         perror("msgctl");
     return; 
 }
@@ -306,11 +306,11 @@ msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
 }
 msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
     size_t msg_object_size = msg_len+0x30;
-    if( msg_object_size > msgLimit ) panic("[-] The size of msg object is larger than the limit of msg queue");
+    if( msg_object_size > MSGLIMIT ) panic("[-] The size of msg object is larger than the limit of msg queue");
     size_t max_msg_num_pre_queue = msgLimit() / msg_object_size;
-    msgSpray_t * ret  = NULL;
-    msgSpray_t * next = NULL;
-    size_t this_round = NULL;
+    msgSpray_t * ret  = 0;
+    msgSpray_t * next = 0;
+    size_t this_round = 0;
     while(num > 0){
         this_round = num > max_msg_num_pre_queue ? max_msg_num_pre_queue: num;
         next  = _msgSpray(msg_len, this_round, ctx);
@@ -443,12 +443,12 @@ int _system_ret_int(char *cmd)
 
     // Run the system command and open a pipe to read its output
     fp = popen(cmd, "r");
-    if (fp == NULL) 
+    if (fp == 0) 
         panic("Failed to run command\n");
     
 
     // Read the output a line at a time
-    if (fgets(buffer, sizeof(buffer), fp) != NULL) 
+    if (fgets(buffer, sizeof(buffer), fp) != 0) 
         result = atoi(buffer);
     
 
@@ -456,37 +456,8 @@ int _system_ret_int(char *cmd)
     pclose(fp);
     return result;
 }
-size_t slab_get_size(int size){
-    char * cmd = calloc(1,0x100);
-    strncpy(cmd,"cat /proc/slabinfo| grep \"^kmalloc-",0x100);
-    strncat(cmd,_size2slabsize(size),0x100);
-    strncat(cmd,"\\s\" | awk \'{print $6}\'",0x100);
-    return  _system_ret_int(cmd)*0x1000;
-}
-size_t slab_get_oo(int size){
-    char * cmd = calloc(1,0x100);
-    strncpy(cmd,"cat /proc/slabinfo| grep \"^kmalloc-",0x100);
-    strncat(cmd,_size2slabsize(size),0x100);
-    strncat(cmd,"\\s\" | awk \'{print $5}\'",0x100);
-    return  _system_ret_int(cmd);
-}
-size_t slab_get_partial(int size){
 
-    size_t nr_objs = _nr_objs(size);
-    // warn(hex(slab_get_oo(size)));
-    return __KERNEL_DIV_ROUND_UP((nr_objs*2),slab_get_oo(size));
-}
-void dump_cpu_partial_slabs(){
-    success("====cpu_partial_slabs====");
-    char *buf = calloc(1,0x100);
-    for(int j = 0 ; j < sizeof(slab_size) / sizeof(size_t) ; j++ ){
-        size_t res = slab_get_partial(slab_size[j]);
-        snprintf(buf,0x100,"kmalloc-%-4d\t\t\t: %p",slab_size[j],res);
-        info(buf);
-    }
-    free(buf);
-    success("====cpu_partial_slabs====");
-}
+
 
 
 void sandbox()
@@ -573,7 +544,7 @@ void _spray_comm_handler()
         }
         else if(req.cmd == MAP){
             FAIL(pgv[req.idx].fd <= 0,"[-] PGV not allocated");
-            void *mapped = mmap(NULL, pgv[req.idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[req.idx].fd, 0);
+            void *mapped = mmap(0, pgv[req.idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgv[req.idx].fd, 0);
             FAIL((long long )mapped < 0,"[-] FAILED to MAP PGV");
             pgv[req.idx].mapped = mapped;
         }else if(req.cmd == EDIT){
@@ -583,7 +554,7 @@ void _spray_comm_handler()
             size_t target_size = pgv[req.idx].size;
             u64 offset = 0;
             for(offset = 0 ; offset < target_size - fram_size ; offset += fram_size)
-                memcpy(pgv[req.idx].mapped + offset, PGV_SHARE_AREA, fram_size);
+                memcpy(pgv[req.idx].mapped + offset, (char *)PGV_SHARE_AREA, fram_size);
         }else if(req.cmd == SHOW){
             FAIL( (req.order) > 4, "Fix libx to add this feature!");
             size_t fram_size   = PAGE_SIZE * (1<<req.order);
@@ -593,7 +564,7 @@ void _spray_comm_handler()
             FAIL( offset >= target_size, "[-] OOB Read");
             FAIL( offset+fram_size >= target_size, "[-] OOB Read");
             FAIL( offset+fram_size < offset, "[-] OOB Read");
-            memcpy(PGV_SHARE_AREA, pgv[req.idx].mapped + offset, fram_size);
+            memcpy((char *)PGV_SHARE_AREA, pgv[req.idx].mapped + offset, fram_size);
         }
         result = req.idx;
         write(pg_vec_parent[1], &result, sizeof(result));
@@ -618,7 +589,7 @@ void pgvCmd(enum PG_VEC_CMD cmd, int idx, size_t order, size_t nr)
 void pgvInit(){
     pipe(pg_vec_child);
     pipe(pg_vec_parent);
-    FAIL_IF( mmap(PGV_SHARE_AREA, PAGE_SIZE * (1<<4) , PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0) != PGV_SHARE_AREA);
+    FAIL_IF( mmap((void *)PGV_SHARE_AREA, PAGE_SIZE * (1<<4) , PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0) != (char *)PGV_SHARE_AREA);
     if (!fork())
     {
         // unshare -r 
@@ -647,7 +618,7 @@ void pgvDel(size_t idx){
 void *pgvMap(int idx){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     FAIL(pgvL[idx].fd <= 0,"[-] PGV not allocated");
-    void *mapped = mmap(NULL, pgvL[idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgvL[idx].fd, 0);
+    void *mapped = mmap(0, pgvL[idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgvL[idx].fd, 0);
     FAIL((long long )mapped < 0,"[-] FAILED to MAP PGV");
     pgvL[idx].mapped = mapped;
     return mapped;
@@ -706,22 +677,22 @@ __attribute__((naked)) size_t  _cloneRoot(size_t flag,size_t shell_func){
 }
 void cloneRoot(void )
 {
-    _cloneRoot(cloneRoot_FLAG,_cloneRootShell);
+    _cloneRoot(cloneRoot_FLAG,(size_t)_cloneRootShell);
 }
 
 void impLimit(){
     struct rlimit limit;
     // Use prlimit to get the limits for RLIMIT_NOFILE
     pid_t pid = 0;  // 0 refers to the current process
-    if (prlimit(pid, RLIMIT_NOFILE, NULL, &limit) == -1) {
+    if (prlimit(pid, RLIMIT_NOFILE, 0, &limit) == -1) {
         perror("prlimit failed");
-        return 1;
+        return ;
     }
 
     limit.rlim_cur = limit.rlim_max;  // Soft limit
     limit.rlim_max = limit.rlim_max;  // Hard limit
     // Use prlimit to set the resource limits of the process
-    prlimit(pid, RLIMIT_NOFILE, &limit, NULL);
+    prlimit(pid, RLIMIT_NOFILE, &limit, 0);
 }
 
 /*
@@ -808,8 +779,8 @@ void libxInit(){
     success("Libx Inited");
 }
 static void __attribute__((constructor)) init(void){
-    setvbuf(stdin, NULL, _IONBF, 0);
-	setvbuf(stdout, NULL, _IONBF, 0);
+    setvbuf(stdin, 0, _IONBF, 0);
+	setvbuf(stdout, 0, _IONBF, 0);
 
     // urand_fd = open("/dev/urandom", 0);
 	// if(unlikely(urand_fd < 0)) panic("Fail to open urandom");

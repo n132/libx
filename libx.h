@@ -32,6 +32,7 @@
 #include <sys/syscall.h>
 #include <sys/resource.h>
 #include <linux/socket.h>
+#include <sys/sendfile.h>
 #include <linux/if_packet.h>
 #include <linux/userfaultfd.h>
 #include <linux/pkt_sched.h>
@@ -42,7 +43,6 @@
 #define MSG_COPY                    040000  /* copy (not remove) all queue messages */
 #define TTYMAGIC                    0x5401
 #define PIPE_NUM                    256
-#define PAGE_SIZE                   0x1000
 #define SOCKET_NUM                  0x200
 #define unlikely(x)                 __builtin_expect(!!(x), 0)
 #define SK_BUFF_NUM                 0x40
@@ -97,13 +97,13 @@ typedef struct
     
     
 }ipc_req_t;
-#define PGV_SHARE_AREA 0x13200000
+#define PGV_SHARE_AREA 0x13200000ull
 
 #define FAIL_IF(x) if ((x)) { \
     printf("\033[0;31m"); \
     perror(#x); \
     printf("\033[0m\n"); \
-    return -1; \
+    exit(-ELIBX); \
 }
 
 #define FAIL(x, msg) if ((x)) { \
