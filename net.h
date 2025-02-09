@@ -12,13 +12,17 @@
 #include <sys/ioctl.h>
 #include <stdlib.h>
 #include <errno.h>
-#define ELIBX 0x132
+#include <string.h>
+#include <stdio.h>
+#include <unistd.h>
+
+#define  ELIBX 0x132
 
 #define FAIL_IF(x) if ((x)) { \
     printf("\033[0;31m"); \
     perror(#x); \
     printf("\033[0m\n"); \
-    return -1; \
+    exit(-ELIBX); \
 }
 
 #define FAIL(x, msg) if ((x)) { \
@@ -48,7 +52,7 @@ typedef unsigned char       u8;
 typedef unsigned short      u16;
 typedef unsigned int        u32;
 typedef unsigned long long  u64;
-
+extern int if_nametoindex();
 struct schedAttr {
     size_t type;
     size_t size;
