@@ -1,6 +1,8 @@
 #include <stdint.h>
 #include <stdio.h>
-
+#include <stdlib.h>
+#include <sys/syscall.h>
+#include <unistd.h> 
 // choose_random_location is the function set KASLR
 // -  find_random_phys_addr for phys_map
 // -  find_random_virt_addr for kernel

