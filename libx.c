@@ -262,11 +262,9 @@ void msgSend(int msgid,size_t size,char *text){
     // Send the message
     if (syscall(SYS_msgsnd, msgid, msg, size, 0)<0) {
         perror("msgsnd");
-        goto OUT;
     }
-    OUT:
-        free(msg);
-        return ;  
+    free(msg);
+    return ;  
 }
 msgMsg* msgRecv(int msgid,size_t size){
     msgMsg* recv = (msgMsg *)calloc(1,sizeof(long)+size+1);
@@ -646,12 +644,13 @@ void pgvDel(size_t idx){
     FAIL(close(pgvL[idx].fd)!=0,hex(pgvL[idx].fd));  
     memset(&pgvL[idx],0,sizeof(pgvFrame));
 }
-void pgvMap(int idx){
+void *pgvMap(int idx){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
     FAIL(pgvL[idx].fd <= 0,"[-] PGV not allocated");
     void *mapped = mmap(NULL, pgvL[idx].size , PROT_READ | PROT_WRITE, MAP_SHARED, pgvL[idx].fd, 0);
     FAIL((long long )mapped < 0,"[-] FAILED to MAP PGV");
     pgvL[idx].mapped = mapped;
+    return mapped;
 }
 void * pgvShow(int idx, size_t offset, size_t size){
     FAIL(idx>=sizeof(pgvL)/sizeof(pgvL[0]), "Index OOB");
