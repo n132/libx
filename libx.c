@@ -806,7 +806,7 @@ static void __attribute__((constructor)) init(void){
 //     CORETAIL(666);
 // }
 
-#define SYS_pidfd_getfd 438
+// #define SYS_pidfd_getfd 438
 
 void coreShell(int reboot){
 	// Use when core_pattern was modified:

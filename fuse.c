@@ -1,4 +1,12 @@
 #include "fuse.h"
+void panic(const char *text){
+    // Red color code
+    printf("\033[0;31m");
+    printf("[X] %s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+    exit(0x132);
+}
 static int getattr_callback(const char *path, struct stat *stbuf)
 {
     memset(stbuf, 0, sizeof(struct stat));
@@ -89,7 +97,7 @@ void *mmap_fuse_file(void)
         panic("Failed to open /tmp/test/pwn");
 
     void *page;
-    page = mmap(FUSE_MEM_ADDR, 0x1000, PROT_READ | PROT_WRITE,
+    page = mmap((void *)FUSE_MEM_ADDR, 0x1000, PROT_READ | PROT_WRITE,
                 MAP_PRIVATE, pwn_fd, 0);
     if (page == MAP_FAILED)
         panic("mmap");
@@ -102,4 +110,7 @@ void * initFuse(void ){
     pthread_create(&th, NULL, fuse_thread, NULL);
     while (!setup_done);
     return mmap_fuse_file();
+}
+int main(){
+    
 }

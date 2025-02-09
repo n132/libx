@@ -2,7 +2,13 @@
 #define FUSE_USE_VERSION 34
 #include <linux/fuse.h>
 #include <fuse.h>
+#include <string.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stddef.h>
+#include <unistd.h>
 #include <errno.h>
 #include <sched.h>
 #include <sys/mman.h>
-#define FUSE_MEM_ADDR 0xdeadbeef000
+#include <pthread.h>
+#define FUSE_MEM_ADDR 0xdeadbeef000ull
