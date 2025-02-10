@@ -19,6 +19,7 @@
 #define  ELIBX 0x132
 
 #define FAIL_IF(x) if ((x)) { \
+    warn("FAIL:"); \
     printf("\033[0;31m"); \
     perror(#x); \
     printf("\033[0m\n"); \
@@ -26,6 +27,7 @@
 }
 
 #define FAIL(x, msg) if ((x)) { \
+    warn("FAIL:"); \
     printf("\033[0;31m"); \
     printf("%s\n",msg); \
     perror(#x); \

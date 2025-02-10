@@ -1,30 +1,6 @@
 #include "libx.h"
-char * hex(size_t);
-void success(const char *text){
-    // Green color code
-    printf("\033[0;32m[+] ");
-    printf("%s", text);
-    // Reset to default color
-    printf("\033[0m\n");
-}
-void info(const char *text){
-    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
-}
-void warn(const char* text) {
-    // Yellow color code
-    printf("\033[0;33m");
-    printf("[!] %s", text);
-    // Reset to default color
-    printf("\033[0m\n");
-}
-void panic(const char *text){
-    // Red color code
-    printf("\033[0;31m");
-    printf("[X] %s", text);
-    // Reset to default color
-    printf("\033[0m\n");
-    exit(0x132);
-}
+
+
 /*
     Utils 
 */
@@ -853,4 +829,29 @@ char *hex(size_t num){
     char *buf = malloc(0x20);
     snprintf(buf,0x20,"%p",(void *)num);
     return buf;
+}
+void success(const char *text){
+    // Green color code
+    printf("\033[0;32m[+] ");
+    printf("%s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+}
+void info(const char *text){
+    printf("\033[34m\033[1m[+] %s\033[0m\n",text);
+}
+void warn(const char* text) {
+    // Yellow color code
+    printf("\033[0;33m");
+    printf("[!] %s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+}
+void panic(const char *text){
+    // Red color code
+    printf("\033[0;31m");
+    printf("[X] %s", text);
+    // Reset to default color
+    printf("\033[0m\n");
+    exit(0x132);
 }

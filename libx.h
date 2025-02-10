@@ -147,12 +147,12 @@ extern size_t           user_cs, user_ss, user_rflags, user_sp;
 };
 // Export global vas
 void shell(void);
-
-// enum hfsc_class_flags {
-// 	HFSC_RSC = 0x1,
-// 	HFSC_FSC = 0x2,
-// 	HFSC_USC = 0x4
-// };
+char * hex(size_t);
+void success(const char *text);
+void info(const char *text);
+void warn(const char* text);
+void panic(const char *text);
 void libxInit(void );
+void * pgvMap(int idx);
 // net related
 #endif
