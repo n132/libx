@@ -1,9 +1,5 @@
 #include "libx.h"
-char * hex(size_t num){
-    char *buf = malloc(0x20);
-    snprintf(buf,0x20,"%p",(void *)num);
-    return buf;
-}
+char * hex(size_t);
 void success(const char *text){
     // Green color code
     printf("\033[0;32m[+] ");
@@ -225,7 +221,7 @@ void debug(){
     char buf[0x10]={};
     read(0,buf,0xf);
 }
-void hexdump(void * addr, size_t len){
+void hexdump(char * addr, size_t len){
     printf("HexDump:\n");
     int more = (len%0x10) ? 1:0;
     for(long long unsigned int i = 0 ; i < (len/0x10)+ more; i++){
@@ -853,3 +849,8 @@ void crash(int fd)
 
 
 
+char *hex(size_t num){
+    char *buf = malloc(0x20);
+    snprintf(buf,0x20,"%p",(void *)num);
+    return buf;
+}
