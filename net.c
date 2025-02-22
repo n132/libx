@@ -2,6 +2,8 @@
 #define SIZE_SZ (sizeof(size_t))
 #define chunksize(p) (*((size_t *)((char *)(p) - SIZE_SZ)) & ~0x7)
 #define size_t unsigned long long 
+#include <err.h>
+
 /*
     lo interface up
 */
@@ -63,6 +65,24 @@ void NLMsgSend_noerr (int sock, struct tf_msg *m) {
     } ack;
     FAIL_IF(write(sock, m, m->nlh.nlmsg_len) == -1);
     // FAIL_IF(read(sock , &ack, sizeof(ack)) == -1);
+}
+// void NLSendMsg(int sock, struct tf_msg *m){
+//     info(hex(write(sock, m, m->nlh.nlmsg_len)));
+// }
+void NLSendMsg(int sock, struct tf_msg *m) {
+    struct msghdr msg = {0};
+    struct iovec iov[1];
+
+    // Set up the message I/O vector
+    iov[0].iov_base = m;  // Pointer to the message buffer
+    iov[0].iov_len = m->nlh.nlmsg_len;  // Length of the message
+
+    // Set up the msghdr (message header)
+    msg.msg_iov = iov;
+    msg.msg_iovlen = 1;
+
+    // Send the message using sendmsg syscall
+    info(hex(sendmsg(sock, &msg, 0)));
 }
 
 
@@ -356,7 +376,7 @@ struct tf_msg *filterAdd(char * name, unsigned short prio, unsigned int flowid, 
     Selector is required for u32
     Due to the TCA_.*_CLASSID issue, this function only works TCA_.*_CLASSID == 1 
     */
-    
+
     struct tf_msg *m = calloc(1, sizeof(struct tf_msg)+0x4000);
     init_tf_msg(m); // Initialize the tf_msg structure
     m->nlh.nlmsg_type   = RTM_NEWTFILTER;
@@ -377,7 +397,6 @@ struct tf_msg *filterAdd(char * name, unsigned short prio, unsigned int flowid, 
     struct rtattr *opts = (struct rtattr *)((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
     opts->rta_type = TCA_OPTIONS;
     opts->rta_len = RTA_LENGTH(0);
-
     for( int i = 0 ; i < nr_attr ; i++ ){
         struct schedAttr * attr = &attrL[i];
         if(!attr)
