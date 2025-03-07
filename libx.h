@@ -1,4 +1,7 @@
 #define _GNU_SOURCE
+#ifdef CONFIG_FUSE
+    #include "fuse.h"
+#endif
 #ifndef MYLIB_H
 #define LIBX "v1.0"
 #include <stdio.h>
@@ -135,11 +138,11 @@ typedef struct
 // Externel funcs
 extern size_t           leakKASLR();
 extern size_t           leakPHYS();
+extern void *fuse_thread(void *_arg);
 extern void *           initFuse(void);
 extern int              sk_fd[SOCKET_NUM][2];
 extern int              pipe_fd[PIPE_NUM*4][2];
 extern size_t           user_cs, user_ss, user_rflags, user_sp;
-
  struct schedAttr {
     size_t type;
     size_t size;

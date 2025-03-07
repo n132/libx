@@ -11,4 +11,4 @@
 #include <sched.h>
 #include <sys/mman.h>
 #include <pthread.h>
-#define FUSE_MEM_ADDR 0xdeadbeef000ull
+static int fault_cnt = 0;

@@ -432,3 +432,20 @@ struct tf_msg * netemQdiscAdd(char *name,u32 handle, u32 parent, u32 usec) {
     return m;
 }
 
+
+
+
+struct tf_msg * tempQdiscAdd(u32 handle,u32 parent,short defcls) {
+    // Kernel Handler: function hfsc_init_qdisc
+    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
+    // -> Calling tc_modify_qdisc 
+    init_tf_msg(m);
+    m->nlh.nlmsg_type    = RTM_NEWQDISC;     
+    m->nlh.nlmsg_flags   |= NLM_F_CREATE;
+    m->tcm.tcm_handle    = handle;
+    m->tcm.tcm_parent    = parent;
+    
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen("hfsc") + 1, "hfsc"));
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_OPTIONS, sizeof(defcls), (char *)&defcls));
+    return m;
+}

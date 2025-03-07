@@ -20,34 +20,54 @@ static int open_callback(const char *path, struct fuse_file_info *fi)
     return 0;
 }
 
-static int fault_cnt = 0;
 static int read_callback(const char *path, char *buf, size_t size, off_t offset,
                          struct fuse_file_info *fi)
 {
 
-    char signal;
     if (strcmp(path, "/pwn") == 0)
     {
-        ++fault_cnt;
-        if (fault_cnt < 0x10000)
+        printf("[FUSE] X\n");
+        if (fault_cnt++ <100000)
         {
-            sleep(1000);
-            return 0;
+
+            sleep(3);
+            printf("[FUSE] Sleep DONE in READ\n");
+            return size;
         }
         else
         {
-            printf("%d\n", fault_cnt);
-            return 0;
+            printf("[FUSE] Y\n");
         }
     }
-
     return -ENOENT;
 }
+// static int write_callback(const char *path, char *buf, size_t size, off_t offset,
+//                          struct fuse_file_info *fi)
+// {
+//     printf("[FUSE] %s %d\n",path,fault_cnt);
 
+//     if (strcmp(path, "/pwn") == 0)
+//     {
+//         printf("[FUSE] X\n");
+//         if (fault_cnt++ <100000)
+//         {
+
+//             sleep(3);
+//             printf("[FUSE] Sleep DONE in Write\n");
+//             return size;
+//         }
+//         else
+//         {
+//             printf("[FUSE] Y\n");
+//         }
+//     }
+//     return -ENOENT;
+// }
 static struct fuse_operations fops = {
     .getattr = getattr_callback,
     .open = open_callback,
     .read = read_callback,
+    // .write = write_callback,
 };
 
 int setup_done = 0;
@@ -81,7 +101,7 @@ void *fuse_thread(void *_arg)
     return NULL;
 }
 int pwn_fd = -1;
-void *mmap_fuse_file(void)
+void *mmap_fuse_file(void * addr)
 {
     if (pwn_fd != -1)
         close(pwn_fd);
@@ -90,17 +110,21 @@ void *mmap_fuse_file(void)
         panic("Failed to open /tmp/test/pwn");
 
     void *page;
-    page = mmap((void *)FUSE_MEM_ADDR, 0x1000, PROT_READ | PROT_WRITE,
-                MAP_PRIVATE, pwn_fd, 0);
+    if(addr==0){
+        addr = 0xdeadbeef000;
+    }
+    page = mmap((void *)addr, 0x1000, PROT_READ | PROT_WRITE,
+                0x2, pwn_fd, 0);
     if (page == MAP_FAILED)
         panic("mmap");
     return page;
 }
+
 void * initFuse(void ){
     CPU_ZERO(&pwn_cpu);
     CPU_SET(0, &pwn_cpu);
     pthread_t th;
     pthread_create(&th, NULL, fuse_thread, NULL);
     while (!setup_done);
-    return mmap_fuse_file();
+    return mmap_fuse_file(0);
 }
