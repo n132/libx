@@ -66,9 +66,6 @@ void NLMsgSend_noerr (int sock, struct tf_msg *m) {
     FAIL_IF(write(sock, m, m->nlh.nlmsg_len) == -1);
     // FAIL_IF(read(sock , &ack, sizeof(ack)) == -1);
 }
-// void NLSendMsg(int sock, struct tf_msg *m){
-//     info(hex(write(sock, m, m->nlh.nlmsg_len)));
-// }
 void NLSendMsg(int sock, struct tf_msg *m) {
     struct msghdr msg = {0};
     struct iovec iov[1];
