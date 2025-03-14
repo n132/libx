@@ -36,6 +36,8 @@
 #include <sys/resource.h>
 #include <linux/socket.h>
 #include <sys/sendfile.h>
+#include <linux/if_xdp.h>
+#include <linux/pkt_cls.h>
 #include <linux/if_packet.h>
 #include <linux/userfaultfd.h>
 #include <linux/pkt_sched.h>
