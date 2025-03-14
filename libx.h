@@ -36,14 +36,13 @@
 #include <sys/resource.h>
 #include <linux/socket.h>
 #include <sys/sendfile.h>
-#include <linux/if_xdp.h>
-#include <linux/pkt_cls.h>
 #include <linux/if_packet.h>
 #include <linux/userfaultfd.h>
 #include <linux/pkt_sched.h>
 #include <linux/rtnetlink.h>
 #include <net/if.h>
-
+#include <linux/if_xdp.h>
+#include <linux/pkt_cls.h>
 // Definations
 #define MSG_COPY                    040000  /* copy (not remove) all queue messages */
 #define TTYMAGIC                    0x5401
@@ -160,4 +159,7 @@ void panic(const char *text);
 void libxInit(void );
 void * pgvMap(int idx);
 // net related
+#define clsAdd(name, prio, target, attrL) \
+    filterAdd(name, prio, target, attrL, sizeof(attrL) / sizeof((attrL)[0]))
+
 #endif

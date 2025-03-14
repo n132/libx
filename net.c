@@ -406,8 +406,6 @@ struct tf_msg *filterAdd(char * name, unsigned short prio, unsigned int flowid, 
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
     return m;
 }
-#define filterAdd(name, prio, target, attrL) \
-    filterAdd(name, prio, target, attrL, sizeof(attrL) / sizeof((attrL)[0]))
 
 struct tf_msg * netemQdiscAdd(char *name,u32 handle, u32 parent, u32 usec) {
     // Learned from KCTF cve-2023-31436 write up
