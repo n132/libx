@@ -23,11 +23,11 @@ size_t fread_u64(const char *fname)
 	fclose(f);
 	return atoll(buf);
 }
-size_t MSGLIMIT =0 ;
+size_t MSGLIMIT = 0 ;
 size_t msgLimit(){
     if(!MSGLIMIT){
         size_t size = fread_u64(MSGMNB_FILE);;
-        if(size == 0xdeadbeef)
+        if(size == 0xdeadbeef || size == 0)
         {
             warn("Failed to load MSG Limit, asssume it's 8192");
             size = 8192;
@@ -278,8 +278,9 @@ msgSpray_t * _msgSpray(size_t size,size_t num,__u8* ctx){
 }
 msgSpray_t * msgSpray(size_t msg_len,size_t num, __u8 *ctx){
     size_t msg_object_size = msg_len+0x30;
-    if( msg_object_size > MSGLIMIT ) panic("[-] The size of msg object is larger than the limit of msg queue");
     size_t max_msg_num_pre_queue = msgLimit() / msg_object_size;
+    if( msg_object_size > MSGLIMIT ) 
+        panic("[-] The size of msg object is larger than the limit of msg queue");
     msgSpray_t * ret  = 0;
     msgSpray_t * next = 0;
     size_t this_round = 0;
@@ -759,7 +760,6 @@ static void __attribute__((constructor)) init(void){
     // size_t seed = 0;
     // read(urand_fd,&seed,sizeof(seed));
     // srand(seed);
-
     optmem_max = fread_u64(OPTMEM_MAX_FILE);
     // libxInit();
 }
