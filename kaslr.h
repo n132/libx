@@ -74,8 +74,8 @@
 
 
 
-#define DUMMY_ITERATIONS            5ull
-#define ITERATIONS                  100ull
+#define DUMMY_ITERATIONS            2ull
+#define ITERATIONS                  12ull
 
 
 

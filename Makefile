@@ -1,6 +1,6 @@
 CC = gcc
 MUSL_CC = musl-gcc
-CFLAGS =-fPIC
+CFLAGS =-fPIC -w
 all: libx.c libx.h kaslr.c fuse.c
 	$(CC) $(CFLAGS) -c kaslr.c -o kaslr.o
 	$(CC) $(CFLAGS) -c net.c -o net.o

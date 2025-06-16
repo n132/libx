@@ -142,7 +142,6 @@ void NLSendMsg(int sock, struct tf_msg *m) {
     sendmsg(sock, &msg, 0);
 }
 
-
 int initNL(){
     /* Netlink message for setting loopback up. */
     struct if_msg if_up_msg = {

