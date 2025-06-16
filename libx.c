@@ -822,7 +822,27 @@ void crash(int fd)
     }
     
 }
-
+int xdpInit(){
+    int sock = socket(AF_XDP, SOCK_RAW, 0);
+    return sock;
+}
+void * xdpUmemAdd(int sock, size_t umem_size){
+    FAIL(umem_size%0x1000,"umem_size must be aligned");
+    void * umem_area = mmap(0, umem_size, 7, MAP_ANONYMOUS | MAP_PRIVATE | MAP_POPULATE, -1, 0);
+    FAIL(umem_area == MAP_FAILED,"Failed to mmap");
+    struct xdp_umem_reg mr = {
+        .addr = (__u64)(uintptr_t)umem_area,
+        .len = umem_size,
+        .chunk_size = 4096,
+        .headroom = 0,
+        .flags = 0,
+    };
+    if (setsockopt(sock, SOL_XDP, XDP_UMEM_REG, &mr, sizeof(mr)) < 0) {
+        perror("setsockopt XDP_UMEM_REG");
+        return (void *)-1;
+    }
+    return umem_area;
+}
 
 
 char *hex(size_t num){

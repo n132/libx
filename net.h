@@ -39,7 +39,7 @@ typedef __u32 u32;
 typedef struct tf_msg {
     struct nlmsghdr nlh;
     struct tcmsg tcm;
-#define TC_DATA_LEN 512
+#define TC_DATA_LEN 0x200
     char attrbuf[TC_DATA_LEN];
 } TM;
 // TM == Trafic Message
