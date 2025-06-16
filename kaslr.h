@@ -76,3 +76,12 @@
 
 #define DUMMY_ITERATIONS            5ull
 #define ITERATIONS                  100ull
+
+
+
+
+#define size_t                      unsigned long long 
+typedef unsigned char       u8;
+typedef unsigned short      u16;
+typedef unsigned int        u32;
+typedef unsigned long long  u64;
