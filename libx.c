@@ -853,3 +853,20 @@ void panic(const char *text){
     printf("\033[0m\n");
     exit(0x132);
 }
+size_t rdtsc(void)
+{
+  unsigned long low, high;
+
+  asm volatile(
+    "lfence;"
+    "sfence;"
+    "rdtsc;"
+    "sfence;"
+    "lfence;"
+    : "=a" (low), "=d" (high)
+    :
+    : "ecx"
+  );
+
+  return (low) | (high << 32);
+}

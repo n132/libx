@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <sys/syscall.h>
 #include <unistd.h> 
+
 // choose_random_location is the function set KASLR
 // -  find_random_phys_addr for phys_map
 // -  find_random_virt_addr for kernel
@@ -65,7 +66,6 @@
 // 1GB
 #define STEP_PHYS                           0x40000000ull
 #define PHYS_LOWER_BOUND            0xffff887000000000ull
-// Assume the target has less than 1T RAM
 #define PHYS_UPPER_BOUND            0xffffa45555555555ull
                                     
 #define SCAN_START_PHYS             PHYS_LOWER_BOUND
@@ -74,8 +74,8 @@
 
 
 
-#define DUMMY_ITERATIONS            5ull
-#define ITERATIONS                  100ull
+#define DUMMY_ITERATIONS            2ull
+#define ITERATIONS                  12ull
 
 
 
@@ -85,3 +85,5 @@ typedef unsigned char       u8;
 typedef unsigned short      u16;
 typedef unsigned int        u32;
 typedef unsigned long long  u64;
+
+size_t get_kaslr_precise(int pti);

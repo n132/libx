@@ -158,6 +158,7 @@ void warn(const char* text);
 void panic(const char *text);
 void libxInit(void );
 void * pgvMap(int idx);
+size_t rdtsc(void);
 // net related
 #define clsAdd(name, prio, target, attrL) \
     filterAdd(name, prio, target, attrL, sizeof(attrL) / sizeof((attrL)[0]))

